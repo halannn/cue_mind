@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import '../navigation/view/main_layout.dart';
 import '../../features/home/views/home_view.dart';
 import '../../features/categories/views/categories_view.dart';
-import '../../features/archive/views/archive_view.dart';
+import '../../features/calender/views/calender_view.dart';
 import '../../features/setting/views/setting_view.dart';
 
 final router = GoRouter(
@@ -20,9 +20,9 @@ final router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', name: 'home', builder: (_, __) => const HomeView()),
-        GoRoute(path: '/explore', name: 'explore', builder: (_, __) => const CategoriesView()),
-        GoRoute(path: '/archive', name: 'archive', builder: (_, __) => const ArchiveView()),
-        GoRoute(path: '/profile', name: 'profile', builder: (_, __) => const SettingView()),
+        GoRoute(path: '/categories', name: 'categories', builder: (_, __) => const CategoriesView()),
+        GoRoute(path: '/calender', name: 'calender', builder: (_, __) => const ArchiveView()),
+        GoRoute(path: '/setting', name: 'setting', builder: (_, __) => const SettingView()),
       ],
     ),
   ],
