@@ -1,58 +1,40 @@
+// lib/core/navigation/view/main_layout.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../viewmodel/navigation_viewmodel.dart';
+import 'package:go_router/go_router.dart';
 
 class MainLayout extends StatelessWidget {
-  final List<Widget> pages;
-  const MainLayout({super.key, required this.pages});
+  final Widget child;
+  const MainLayout({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => NavigationViewModel(),
-      child: Consumer<NavigationViewModel>(
-        builder: (context, viewModel, child) {
-          return Scaffold(
-            body: pages[viewModel.currentIndex],
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: viewModel.currentIndex,
-              onTap: (index) {
-                viewModel.updateIndex(index);
-              },
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              selectedItemColor: Theme.of(
-                context,
-              ).colorScheme.onPrimaryContainer,
-              unselectedItemColor: Theme.of(
-                context,
-              ).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-              selectedLabelStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-              ),
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.category),
-                  label: 'Categories',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.browse_gallery),
-                  label: 'Archive',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: 'Settings',
-                ),
-              ],
-            ),
-          );
+    final loc = GoRouterState.of(context).uri.toString();
+
+    int index = switch (loc) {
+      '/categories' => 1,
+      '/calendar' => 2,
+      '/setting' => 3,
+      _ => 0,
+    };
+
+    return Scaffold(
+      body: SafeArea(child: child),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (i) {
+          switch (i) {
+            case 0: context.go('/'); break;
+            case 1: context.go('/categories'); break;
+            case 2: context.go('/calendar'); break;
+            case 3: context.go('/setting'); break;
+          }
         },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.label), label: 'Categories'),
+          NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Calendar'),
+          NavigationDestination(icon: Icon(Icons.settings), label: 'Setting'),
+        ],
       ),
     );
   }
