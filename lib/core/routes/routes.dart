@@ -5,7 +5,8 @@ import '../navigation/view/main_layout.dart';
 import '../../features/home/views/home_view.dart';
 import '../../features/home/views/new_reminder_view.dart';
 import '../../features/categories/views/categories_view.dart';
-import '../../features/calender/views/calender_view.dart';
+import '../../features/categories/views/category_view.dart';
+import '../../features/calendar/views/calender_view.dart';
 import '../../features/setting/views/setting_view.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -31,7 +32,8 @@ final router = GoRouter(
           path: '/categories',
           name: 'categories',
           parentNavigatorKey: shellNavigatorKey,
-          pageBuilder: (_, _) => const NoTransitionPage(child: CategoriesView()),
+          pageBuilder: (_, _) =>
+              const NoTransitionPage(child: CategoriesView()),
         ),
         GoRoute(
           path: '/calendar',
@@ -52,10 +54,27 @@ final router = GoRouter(
       path: '/reminder/new',
       name: 'reminderNew',
       parentNavigatorKey: rootNavigatorKey,
-     pageBuilder: (_, _) => const MaterialPage(
-        fullscreenDialog: true,
-        child: NewReminderView(),
-      ),
+      pageBuilder: (_, _) =>
+          const MaterialPage(fullscreenDialog: true, child: NewReminderView()),
+    ),
+
+    GoRoute(
+      path: '/categories/:id',
+      name: 'categoryShow',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (_, state) {
+        final idStr = state.pathParameters['id'];
+        final id = int.tryParse(idStr ?? '');
+        if (id == null) {
+          return const NoTransitionPage(
+            child: Scaffold(body: Center(child: Text('Invalid ID'))),
+          );
+        }
+        return MaterialPage(
+          fullscreenDialog: false,
+          child: CategoryView(id: id),
+        );
+      }
     ),
   ],
 );
