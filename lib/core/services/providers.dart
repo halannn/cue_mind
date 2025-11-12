@@ -10,22 +10,24 @@ import 'image_service.dart';
 import '../../features/home/services/reminder_repository.dart';
 import '../../features/categories/services/category_repository.dart';
 
+// =============================================================================
+// DATABASE PROVIDERS
+// =============================================================================
 final dbProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
+
+  ref.keepAlive;
+
   ref.onDispose(() {
     db.close();
   });
+
   return db;
 });
 
-final appBootstrapProvider = FutureProvider<void>((ref) async {
-  await Future.wait([ref.read(notificationServiceProvider).init()]);
-
-  ref.read(dbProvider);
-  ref.read(categoryDaoProvider);
-  ref.read(reminderDaoProvider);
-});
-
+// =============================================================================
+// DAO PROVIDERS
+// =============================================================================
 final categoryDaoProvider = Provider<CategoryDao>(
   (ref) => CategoryDao(ref.watch(dbProvider)),
 );
@@ -33,11 +35,17 @@ final reminderDaoProvider = Provider<ReminderDao>(
   (ref) => ReminderDao(ref.watch(dbProvider)),
 );
 
+// =============================================================================
+// SERVICE PROVIDERS
+// =============================================================================
 final notificationServiceProvider = Provider<NotificationService>(
   (_) => NotificationService(),
 );
 final imageServiceProvider = Provider<ImageService>((_) => ImageService());
 
+// =============================================================================
+// REPOSITORY PROVIDERS
+// =============================================================================
 final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
   return ReminderRepository(
     db: ref.watch(dbProvider),
@@ -49,4 +57,11 @@ final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   final dao = ref.watch(categoryDaoProvider);
   return CategoryRepository(dao);
+});
+
+// =============================================================================
+// BOOTSTRAP PROVIDER
+// =============================================================================
+final appBootstrapProvider = FutureProvider<void>((ref) async {
+  await ref.read(notificationServiceProvider).init();
 });
