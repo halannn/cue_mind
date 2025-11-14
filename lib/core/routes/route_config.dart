@@ -19,7 +19,7 @@ class AppRoutes {
   static void goSettings(BuildContext context) => context.go(settings);
 
   static void pushReminderNew(BuildContext context) => context.pushNamed(RouteNames.reminderNew);
-  static void pushCateogryDetail(BuildContext context, int id) => context.push('/categories/$id');
+  static void pushCategoryDetail(BuildContext context, int id) => context.push('/categories/$id');
 }
 
 /// Route names for named navigation.

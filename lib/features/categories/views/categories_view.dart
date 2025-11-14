@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/categories_viewmodel.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../../core/utils/color_hex.dart';
-import 'package:go_router/go_router.dart';
+import '../../../core/routes/route_config.dart';
+import '../widgets/category_color_picker.dart';
+import '../services/category_repository.dart';
 
 class CategoriesView extends ConsumerWidget {
   const CategoriesView({super.key});
@@ -14,7 +15,12 @@ class CategoriesView extends ConsumerWidget {
     final vm = ref.read(categoriesVMProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Categories')),
+      appBar: AppBar(
+        title: const Text(
+          'Categories',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       body: switch (s.list) {
         AsyncData(:final value) =>
           value.isEmpty
@@ -27,6 +33,7 @@ class CategoriesView extends ConsumerWidget {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: HexColorParsing(c.colorHex).toColor(),
+                        maxRadius: 16,
                       ),
                       title: Text(c.name),
                       trailing: PopupMenuButton<String>(
@@ -40,7 +47,7 @@ class CategoriesView extends ConsumerWidget {
                               id: c.id,
                             );
                           } else if (k == 'delete') {
-                            await vm.remove(c.id);
+                            await _showDeleteConfirmation(context, vm, c);
                           }
                         },
                         itemBuilder: (_) => const [
@@ -48,8 +55,7 @@ class CategoriesView extends ConsumerWidget {
                           PopupMenuItem(value: 'delete', child: Text('Delete')),
                         ],
                       ),
-                      onTap: () =>
-                      context.go('/categories/${c.id}')
+                      onTap: () => AppRoutes.pushCategoryDetail(context, c.id),
                     );
                   },
                 ),
@@ -78,58 +84,27 @@ void _showUpsertDialog(
     context: context,
     builder: (_) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
-        title: Text(id == null ? 'Add Category' : 'Delete Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Category Name'),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Text('Color:'),
-                const SizedBox(width: 8),
-                CircleAvatar(backgroundColor: pickedColor, radius: 12),
-                const SizedBox(width: 8),
-                Text(
-                  pickedColor.toHex(includeAlpha: false),
-                  style: Theme.of(context).textTheme.bodySmall,
+        title: Text(id == null ? 'Add Category' : 'Edit Category'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Category Name',
+                  helperText: 'Max 30 characters',
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: 320,
-              child: BlockPicker(
-                pickerColor: pickedColor,
-                onColorChanged: (c) => setState(() => pickedColor = c),
-                availableColors: const [
-                  Colors.red,
-                  Colors.pink,
-                  Colors.purple,
-                  Colors.deepPurple,
-                  Colors.indigo,
-                  Colors.blue,
-                  Colors.lightBlue,
-                  Colors.cyan,
-                  Colors.teal,
-                  Colors.green,
-                  Colors.lightGreen,
-                  Colors.lime,
-                  Colors.yellow,
-                  Colors.amber,
-                  Colors.orange,
-                  Colors.deepOrange,
-                  Colors.brown,
-                  Colors.grey,
-                  Colors.blueGrey,
-                  Colors.black,
-                ],
+                maxLength: 30,
+                textCapitalization: TextCapitalization.words,
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              CategoryColorPicker(
+                selectedColor: pickedColor,
+                onColorChanged: (c) => setState(() => pickedColor = c),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -139,18 +114,25 @@ void _showUpsertDialog(
           FilledButton(
             onPressed: () async {
               final hex = pickedColor.toHex(includeAlpha: false);
-              try {
-                if (id == null) {
-                  await vm.add(nameCtrl.text, hex);
-                } else {
-                  await vm.edit(id, nameCtrl.text, hex);
-                }
-                if (context.mounted) Navigator.pop(ctx);
-              } catch (e) {
-                if (!context.mounted) return;
+
+              final error = id == null
+                  ? await vm.add(nameCtrl.text, hex)
+                  : await vm.edit(id, nameCtrl.text, hex);
+
+              if (error == null && ctx.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      id == null ? 'Category added' : 'Category updated',
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } else if (error != null && ctx.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text(e.toString())));
+                ).showSnackBar(SnackBar(content: Text(error)));
               }
             },
             child: Text(id == null ? 'Save' : 'Update'),
@@ -159,4 +141,41 @@ void _showUpsertDialog(
       ),
     ),
   );
+}
+
+Future<void> _showDeleteConfirmation(
+  BuildContext context,
+  CategoriesVM vm,
+  Category category,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('Delete "${category.name}"?'),
+      content: const Text('This will not delete its reminders.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(ctx).colorScheme.error,
+            foregroundColor: Theme.of(ctx).colorScheme.onError,
+          ),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true && context.mounted) {
+    await vm.remove(category.id);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${category.name} deleted')));
+    }
+  }
 }

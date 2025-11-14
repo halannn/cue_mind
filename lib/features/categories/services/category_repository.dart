@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import '../../../core/services/db/app_database.dart';
 import '../../../core/services/db/daos/category_dao.dart';
 
+export '../../../core/services/db/app_database.dart' show Category, Reminder;
+
 class CategoryRepository {
   final CategoryDao dao;
   CategoryRepository(this.dao);
@@ -41,4 +43,13 @@ class CategoryRepository {
   }
 
   Future<int> deleteSoft(int id) => dao.deleteSoft(id);
+
+  Future<bool> nameExists(String name, {int? excludeId}) async {
+    final all = await allOnce();
+    return all.any(
+      (cat) =>
+          cat.name.toLowerCase() == name.trim().toLowerCase() &&
+          cat.id != excludeId,
+    );
+  }
 }
