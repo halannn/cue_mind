@@ -77,7 +77,7 @@ class CalendarDayDetailView extends ConsumerWidget {
             Icon(
               Icons.event_available_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
@@ -232,7 +232,7 @@ class CalendarDayDetailView extends ConsumerWidget {
               // Chevron indicator
               Icon(
                 Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -266,9 +266,9 @@ class CalendarDayDetailView extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: chipColor.withOpacity(0.15),
+            color: chipColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: chipColor.withOpacity(0.3), width: 1),
+            border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
           ),
           child: Text(
             category.name,
@@ -281,7 +281,7 @@ class CalendarDayDetailView extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox(width: 16, height: 16),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 

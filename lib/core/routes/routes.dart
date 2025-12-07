@@ -12,6 +12,7 @@ import '../../features/categories/views/categories_view.dart';
 import '../../features/categories/views/category_view.dart';
 import '../../features/calendar/views/calendar_view.dart';
 import '../../features/calendar/views/calendar_day_detail_view.dart';
+import '../../features/calendar/views/monthly_report_view.dart';
 import '../../features/setting/views/setting_view.dart';
 
 // =============================================================================
@@ -113,6 +114,14 @@ final router = GoRouter(
       name: 'calendarDay',
       navigatorKey: rootNavigatorKey,
       builder: (state) => _buildCalendarDayDetailPage(state),
+    ),
+
+    // Monthly report route
+    RoutesFactory.createPushRoute(
+      path: '/calendar/report',
+      name: 'monthlyReport',
+      navigatorKey: rootNavigatorKey,
+      builder: (_) => const MonthlyReportView(),
     ),
   ],
 );

@@ -2,6 +2,7 @@ import '../../../core/services/db/app_database.dart';
 import '../../../core/services/db/daos/reminder_dao.dart';
 import '../../../core/services/db/daos/category_dao.dart';
 import '../models/calendar_day.dart';
+import '../models/monthly_report.dart';
 
 /// Repository for calendar-specific data operations.
 ///
@@ -108,5 +109,88 @@ class CalendarRepository {
   Future<List<Reminder>> getDayReminders(DateTime dayUtc) {
     final normalized = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day);
     return reminderDao.getRemindersForDay(normalized);
+  }
+
+  // ===========================================================================
+  // MONTHLY REPORT ANALYTICS
+  // ===========================================================================
+
+  /// Generate comprehensive monthly report with all analytics.
+  ///
+  /// Timezone-aware: Converts scheduledAt to local time before grouping.
+  Future<MonthlyReport> getMonthlyReport(
+    DateTime monthUtc, {
+    String timezone = 'Asia/Makassar',
+  }) async {
+    final month = DateTime.utc(monthUtc.year, monthUtc.month, 1);
+
+    // Get all reminders for the month
+    final reminders = await reminderDao.getRemindersForMonth(month);
+    final totalReminders = reminders.length;
+
+    // Status breakdown
+    final statusMap = await reminderDao.getMonthStatusBreakdown(month);
+    final statusBreakdown = StatusBreakdown(
+      done: statusMap['done'] ?? 0,
+      pending: statusMap['pending'] ?? 0,
+      snoozed: statusMap['snoozed'] ?? 0,
+    );
+
+    // Category distribution
+    final categoryMap = await reminderDao.getMonthCategoryDistribution(month);
+    final categories = await categoryDao.allOnce();
+    final categoryColorMap = {
+      for (var cat in categories) cat.id: cat.colorHex,
+    };
+    final categoryNameMap = {
+      for (var cat in categories) cat.id: cat.name,
+    };
+
+    final categoryDistribution = <CategoryDistribution>[];
+    categoryMap.forEach((catId, count) {
+      final percentage = totalReminders > 0 ? (count / totalReminders * 100).toDouble() : 0.0;
+      categoryDistribution.add(
+        CategoryDistribution(
+          categoryId: catId,
+          categoryName: catId == null ? 'No Category' : categoryNameMap[catId] ?? 'Unknown',
+          colorHex: catId == null ? '#8E8E93' : categoryColorMap[catId] ?? '#8E8E93',
+          count: count,
+          percentage: percentage,
+        ),
+      );
+    });
+
+    // Sort by count descending
+    categoryDistribution.sort((a, b) => b.count.compareTo(a.count));
+
+    // Weekday activity
+    final weekdayMap = await reminderDao.getMonthWeekdayActivity(month, timezone);
+    const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekdayActivity = <WeekdayActivity>[];
+    for (int i = 1; i <= 7; i++) {
+      weekdayActivity.add(
+        WeekdayActivity(
+          weekday: i,
+          dayName: weekdayNames[i - 1],
+          count: weekdayMap[i] ?? 0,
+        ),
+      );
+    }
+
+    // Recurring vs one-time
+    final recurringMap = await reminderDao.getMonthRecurringBreakdown(month);
+    final recurringBreakdown = RecurringVsOneTime(
+      recurring: recurringMap['recurring'] ?? 0,
+      oneTime: recurringMap['oneTime'] ?? 0,
+    );
+
+    return MonthlyReport(
+      month: month,
+      totalReminders: totalReminders,
+      statusBreakdown: statusBreakdown,
+      categoryDistribution: categoryDistribution,
+      weekdayActivity: weekdayActivity,
+      recurringBreakdown: recurringBreakdown,
+    );
   }
 }

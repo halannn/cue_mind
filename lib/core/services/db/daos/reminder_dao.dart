@@ -132,6 +132,98 @@ class ReminderDao {
     return q.watch();
   }
 
+  // === Analytics queries for monthly report ===
+
+  /// Get status breakdown for a specific month.
+  ///
+  /// Returns map: {'done': count, 'pending': count, 'snoozed': count}
+  Future<Map<String, int>> getMonthStatusBreakdown(DateTime monthUtc) async {
+    final reminders = await getRemindersForMonth(monthUtc);
+
+    final breakdown = <String, int>{
+      'done': 0,
+      'pending': 0,
+      'snoozed': 0,
+    };
+
+    for (final reminder in reminders) {
+      final status = reminder.status;
+      if (breakdown.containsKey(status)) {
+        breakdown[status] = breakdown[status]! + 1;
+      }
+    }
+
+    return breakdown;
+  }
+
+  /// Get category distribution for a specific month.
+  ///
+  /// Returns list of tuples: [(categoryId, count), ...]
+  Future<Map<int?, int>> getMonthCategoryDistribution(DateTime monthUtc) async {
+    final reminders = await getRemindersForMonth(monthUtc);
+
+    final distribution = <int?, int>{};
+
+    for (final reminder in reminders) {
+      final catId = reminder.categoryId;
+      distribution[catId] = (distribution[catId] ?? 0) + 1;
+    }
+
+    return distribution;
+  }
+
+  /// Get weekday activity for a specific month.
+  ///
+  /// Returns map: {1: count (Monday), 2: count (Tuesday), ..., 7: count (Sunday)}
+  ///
+  /// CRITICAL: Converts scheduledAt from UTC to user timezone before grouping!
+  Future<Map<int, int>> getMonthWeekdayActivity(
+    DateTime monthUtc,
+    String timezone,
+  ) async {
+    final reminders = await getRemindersForMonth(monthUtc);
+
+    final activity = <int, int>{
+      1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
+    };
+
+    for (final reminder in reminders) {
+      // Convert UTC to local timezone
+      final scheduledUtc = DateTime.fromMillisecondsSinceEpoch(
+        reminder.scheduledAt,
+        isUtc: true,
+      );
+      final scheduledLocal = scheduledUtc.toLocal();
+
+      final weekday = scheduledLocal.weekday; // 1 = Monday, 7 = Sunday
+      activity[weekday] = activity[weekday]! + 1;
+    }
+
+    return activity;
+  }
+
+  /// Get recurring vs one-time breakdown.
+  ///
+  /// Returns map: {'recurring': count, 'oneTime': count}
+  Future<Map<String, int>> getMonthRecurringBreakdown(DateTime monthUtc) async {
+    final reminders = await getRemindersForMonth(monthUtc);
+
+    final breakdown = {
+      'recurring': 0,
+      'oneTime': 0,
+    };
+
+    for (final reminder in reminders) {
+      if (reminder.hasRecurrence) {
+        breakdown['recurring'] = breakdown['recurring']! + 1;
+      } else {
+        breakdown['oneTime'] = breakdown['oneTime']! + 1;
+      }
+    }
+
+    return breakdown;
+  }
+
   Future<void> update({
     required int id,
     required String title,

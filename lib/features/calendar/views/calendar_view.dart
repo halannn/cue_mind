@@ -29,6 +29,12 @@ class CalendarView extends ConsumerWidget {
         title: const Text('Calendar'),
         elevation: 0,
         actions: [
+          // Monthly report button
+          IconButton(
+            icon: const Icon(Icons.analytics_outlined),
+            tooltip: 'Monthly Report',
+            onPressed: () => context.push('/calendar/report'),
+          ),
           // Jump to today button
           IconButton(
             icon: const Icon(Icons.today),
@@ -183,7 +189,7 @@ class CalendarView extends ConsumerWidget {
                 day,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isWeekend
-                      ? Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6)
+                      ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
                       : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
@@ -254,7 +260,7 @@ class CalendarView extends ConsumerWidget {
 
     // Background color: category tint or transparent
     final backgroundColor = categoryColor != null
-        ? categoryColor.withOpacity(0.12)
+        ? categoryColor.withValues(alpha: 0.12)
         : Colors.transparent;
 
     // Today indicator
@@ -327,7 +333,7 @@ class CalendarView extends ConsumerWidget {
         width: 6,
         height: 6,
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(opacity),
+          color: theme.colorScheme.primary.withValues(alpha: opacity),
           shape: BoxShape.circle,
         ),
       ),
