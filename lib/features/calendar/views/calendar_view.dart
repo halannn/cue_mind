@@ -95,29 +95,25 @@ class CalendarView extends ConsumerWidget {
         // Day of week labels
         _buildDayOfWeekLabels(context),
 
-        // Calendar grid
-        Expanded(
-          flex: 2, // Give more space to calendar
-          child: GestureDetector(
-            // Swipe gestures for month navigation
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity! < 0) {
-                // Swipe left -> next month
-                vm.nextMonth();
-              } else if (details.primaryVelocity! > 0) {
-                // Swipe right -> previous month
-                vm.previousMonth();
-              }
-            },
-            child: _buildCalendarGrid(context, ref, monthData),
-          ),
+        // Calendar grid - NO Expanded, just takes needed space
+        GestureDetector(
+          // Swipe gestures for month navigation
+          onHorizontalDragEnd: (details) {
+            if (details.primaryVelocity! < 0) {
+              // Swipe left -> next month
+              vm.nextMonth();
+            } else if (details.primaryVelocity! > 0) {
+              // Swipe right -> previous month
+              vm.previousMonth();
+            }
+          },
+          child: _buildCalendarGrid(context, ref, monthData), // ✅ No Expanded wrapper
         ),
 
         const Divider(height: 1),
 
-        // Today's reminders section
+        // Today's reminders section - this will take remaining space
         const Expanded(
-          flex: 1, // Give less space to today's list
           child: TodayRemindersSection(),
         ),
       ],
@@ -206,7 +202,9 @@ class CalendarView extends ConsumerWidget {
 
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      shrinkWrap: true, // ✅ Makes GridView take only needed height
+      physics: const NeverScrollableScrollPhysics(), // ✅ Disable GridView scrolling
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
         childAspectRatio: 0.85, // Slightly taller than wide
       ),

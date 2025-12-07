@@ -33,6 +33,8 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
   DateTime? _scheduledDateTime;
   int? _categoryId;
   String? _photoPath;
+  String _priority = 'normal'; // normal/low/high
+  String _status = 'pending'; // pending/done/snoozed
 
   // Recurrence state
   RecurrenceType _recurrenceType = RecurrenceType.none;
@@ -88,6 +90,8 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
           ).toLocal();
           _categoryId = reminder.categoryId;
           _photoPath = reminder.picturePath;
+          _priority = reminder.priority ?? 'normal';
+          _status = reminder.status;
           _recurrenceType = reminder.hasRecurrence
               ? _parseRecurrenceType(reminder.recurrenceRule)
               : RecurrenceType.none;
@@ -166,9 +170,16 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                     const SizedBox(height: 24),
                     _buildCategorySelector(),
                     const SizedBox(height: 24),
+                    _buildPhotoSection(),
+                    const SizedBox(height: 24),
                     _buildDateTimePicker(),
                     const SizedBox(height: 24),
-                    _buildPhotoSection(),
+                    _buildPrioritySelector(),
+                    const SizedBox(height: 24),
+                    if (_isEditMode) ...[
+                      _buildStatusSelector(),
+                      const SizedBox(height: 24),
+                    ],
                   ],
                 ),
               ),
@@ -710,6 +721,90 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
   }
 
   // ===========================================================================
+  // PRIORITY & STATUS SELECTORS
+  // ===========================================================================
+
+  /// Priority selector widget (low/normal/high).
+  /// Available in both create and edit modes.
+  Widget _buildPrioritySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Prioritas',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'low',
+              label: Text('Rendah'),
+              icon: Icon(Icons.arrow_downward, size: 16),
+            ),
+            ButtonSegment(
+              value: 'normal',
+              label: Text('Normal'),
+              icon: Icon(Icons.remove, size: 16),
+            ),
+            ButtonSegment(
+              value: 'high',
+              label: Text('Tinggi'),
+              icon: Icon(Icons.arrow_upward, size: 16),
+            ),
+          ],
+          selected: {_priority},
+          onSelectionChanged: (Set<String> newSelection) {
+            setState(() {
+              _priority = newSelection.first;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Status selector widget (pending/done/snoozed).
+  /// Only available in edit mode (status is always 'pending' for new reminders).
+  Widget _buildStatusSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Status',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'pending',
+              label: Text('Pending'),
+              icon: Icon(Icons.schedule, size: 16),
+            ),
+            ButtonSegment(
+              value: 'done',
+              label: Text('Selesai'),
+              icon: Icon(Icons.check_circle, size: 16),
+            ),
+            ButtonSegment(
+              value: 'snoozed',
+              label: Text('Snooze'),
+              icon: Icon(Icons.snooze, size: 16),
+            ),
+          ],
+          selected: {_status},
+          onSelectionChanged: (Set<String> newSelection) {
+            setState(() {
+              _status = newSelection.first;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
   // BOTTOM ACTION BAR
   // ===========================================================================
 
@@ -832,6 +927,8 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
           whenUtc: _scheduledDateTime!.toUtc(),
           picturePath: _photoPath,
           recurrenceRule: _recurrenceRule,
+          priority: _priority,
+          status: _status,
         );
 
         if (mounted) {
@@ -850,6 +947,7 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
           categoryId: _categoryId,
           whenUtc: _scheduledDateTime!.toUtc(),
           picturePath: _photoPath,
+          priority: _priority,
         );
 
         if (mounted) {

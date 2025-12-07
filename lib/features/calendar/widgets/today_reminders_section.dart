@@ -259,21 +259,58 @@ class _TodayReminderItem extends ConsumerWidget {
               ),
             ),
 
-            // Status badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getStatusColor(context, reminder.status).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _getStatusLabel(reminder.status),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: _getStatusColor(context, reminder.status),
+            // Status and Priority badges
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(context, reminder.status).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _getStatusLabel(reminder.status),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _getStatusColor(context, reminder.status),
+                    ),
+                  ),
                 ),
-              ),
+
+                // Priority badge
+                if (reminder.priority != null && reminder.priority != 'normal') ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _getPriorityColor(reminder.priority!).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getPriorityIcon(reminder.priority!),
+                          size: 10,
+                          color: _getPriorityColor(reminder.priority!),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          _getPriorityLabel(reminder.priority!),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: _getPriorityColor(reminder.priority!),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -302,6 +339,42 @@ class _TodayReminderItem extends ConsumerWidget {
       case 'pending':
       default:
         return 'Pending';
+    }
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'high':
+        return Colors.red;
+      case 'low':
+        return Colors.grey;
+      case 'normal':
+      default:
+        return Colors.blue;
+    }
+  }
+
+  IconData _getPriorityIcon(String priority) {
+    switch (priority) {
+      case 'high':
+        return Icons.arrow_upward;
+      case 'low':
+        return Icons.arrow_downward;
+      case 'normal':
+      default:
+        return Icons.remove;
+    }
+  }
+
+  String _getPriorityLabel(String priority) {
+    switch (priority) {
+      case 'high':
+        return 'High';
+      case 'low':
+        return 'Low';
+      case 'normal':
+      default:
+        return 'Normal';
     }
   }
 }

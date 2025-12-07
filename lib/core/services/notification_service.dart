@@ -37,6 +37,12 @@ class NotificationService {
     required String body,
     required DateTime fireTimeUtc,
   }) async {
+    // Skip scheduling if date is in the past (allow for edit mode)
+    final now = DateTime.now().toUtc();
+    if (fireTimeUtc.isBefore(now)) {
+      return; // Silently skip past notifications
+    }
+
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
         'cue_mind_channel',

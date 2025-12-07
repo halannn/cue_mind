@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -79,9 +81,18 @@ class ReminderDetailView extends ConsumerWidget {
                   children: [
                     const Icon(Icons.access_time, size: 20),
                     const SizedBox(width: 8),
-                    Text(DateFormat.yMMMMd().add_jm().format(scheduled)),
-                    const Spacer(),
+                    Expanded(
+                      child: Text(DateFormat.yMMMMd().add_jm().format(scheduled)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
                     _statusChip(context, reminder.status),
+                    const SizedBox(width: 8),
+                    if (reminder.priority != null)
+                      _priorityChip(context, reminder.priority!),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -108,11 +119,46 @@ class ReminderDetailView extends ConsumerWidget {
                     },
                   ),
                 const SizedBox(height: 16),
-                if (reminder.description != null && reminder.description!.isNotEmpty)
+                if (reminder.description != null && reminder.description!.isNotEmpty) ...[
+                  Text(
+                    'Deskripsi',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(reminder.description ?? '', style: Theme.of(context).textTheme.bodyLarge),
+                  const SizedBox(height: 16),
+                ],
+
+                // Photo section
+                if (reminder.picturePath != null && reminder.picturePath!.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: AspectRatio(
+                      aspectRatio: 4 / 3,
+                      child: Image.file(
+                        File(reminder.picturePath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: Icon(Icons.broken_image, size: 48, color: Colors.grey.shade400),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Additional info section
+                if (reminder.hasRecurrence || reminder.timezone != 'Asia/Makassar')
+                  _buildInfoSection(context, reminder),
+
                 const Spacer(),
                 // Bottom actions
-                
+
               ],
             ),
           ),
@@ -138,5 +184,94 @@ class ReminderDetailView extends ConsumerWidget {
       decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
       child: Text(status[0].toUpperCase() + status.substring(1), style: TextStyle(color: c, fontWeight: FontWeight.w700)),
     );
+  }
+
+  Widget _priorityChip(BuildContext context, String priority) {
+    Color c;
+    IconData icon;
+    String label;
+
+    switch (priority) {
+      case 'high':
+        c = Colors.red;
+        icon = Icons.arrow_upward;
+        label = 'Tinggi';
+        break;
+      case 'low':
+        c = Colors.grey;
+        icon = Icons.arrow_downward;
+        label = 'Rendah';
+        break;
+      default: // normal
+        c = Colors.blue;
+        icon = Icons.remove;
+        label = 'Normal';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: c),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: c, fontWeight: FontWeight.w700, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoSection(BuildContext context, Reminder reminder) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (reminder.hasRecurrence && reminder.recurrenceRule != null) ...[
+            Row(
+              children: [
+                Icon(Icons.repeat, size: 16, color: Colors.grey.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Pengulangan: ${_getRecurrenceText(reminder.recurrenceRule!)}',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (reminder.timezone != 'Asia/Makassar') ...[
+            Row(
+              children: [
+                Icon(Icons.public, size: 16, color: Colors.grey.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Timezone: ${reminder.timezone}',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _getRecurrenceText(String rule) {
+    if (rule.contains('FREQ=DAILY')) return 'Harian';
+    if (rule.contains('FREQ=WEEKLY')) return 'Mingguan';
+    if (rule.contains('FREQ=MONTHLY')) return 'Bulanan';
+    return 'Kustom';
   }
 }

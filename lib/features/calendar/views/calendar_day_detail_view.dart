@@ -196,16 +196,21 @@ class CalendarDayDetailView extends ConsumerWidget {
                         ),
                       ),
 
-                    // Metadata row (category, recurrence, notification)
-                    Row(
+                    // Metadata row (status, priority, category, recurrence)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
+                        // Status chip
+                        _buildStatusChip(theme, reminder.status),
+
+                        // Priority chip
+                        if (reminder.priority != null)
+                          _buildPriorityChip(theme, reminder.priority!),
+
                         // Category chip
                         if (reminder.categoryId != null)
                           _buildCategoryChip(ref, reminder.categoryId!),
-
-                        if (reminder.categoryId != null &&
-                            (reminder.hasRecurrence))
-                          const SizedBox(width: 8),
 
                         // Recurrence indicator
                         if (reminder.hasRecurrence)
@@ -214,15 +219,6 @@ class CalendarDayDetailView extends ConsumerWidget {
                             size: 16,
                             color: theme.colorScheme.primary,
                           ),
-
-                        const Spacer(),
-
-                        // Notification bell icon
-                        Icon(
-                          Icons.notifications_outlined,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
                       ],
                     ),
                   ],
@@ -285,13 +281,98 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
+  /// Status chip widget
+  Widget _buildStatusChip(ThemeData theme, String status) {
+    Color chipColor;
+    String label;
+
+    switch (status) {
+      case 'done':
+        chipColor = Colors.green;
+        label = 'Selesai';
+        break;
+      case 'snoozed':
+        chipColor = Colors.amber;
+        label = 'Snooze';
+        break;
+      default: // pending
+        chipColor = theme.colorScheme.primary;
+        label = 'Pending';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: chipColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  /// Priority chip widget
+  Widget _buildPriorityChip(ThemeData theme, String priority) {
+    Color chipColor;
+    IconData icon;
+    String label;
+
+    switch (priority) {
+      case 'high':
+        chipColor = Colors.red;
+        icon = Icons.arrow_upward;
+        label = 'Tinggi';
+        break;
+      case 'low':
+        chipColor = Colors.grey;
+        icon = Icons.arrow_downward;
+        label = 'Rendah';
+        break;
+      default: // normal
+        chipColor = Colors.blue;
+        icon = Icons.remove;
+        label = 'Normal';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: chipColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Navigate to reminder editor with date pre-filled
   void _addReminderOnDate(BuildContext context, DateTime date) {
     context.push('${AppRoutes.reminderNew}?date=${date.toIso8601String()}');
   }
 
-  /// Navigate to reminder editor in edit mode
+  /// Navigate to reminder detail view
   void _editReminder(BuildContext context, int reminderId) {
-    context.push('/reminder/edit/$reminderId');
+    context.push('/reminder/$reminderId');
   }
 }

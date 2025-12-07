@@ -23,6 +23,7 @@ class ReminderRepository {
     String? picturePath,
     String? thumbnailPath,
     String timezone = 'Asia/Makassar',
+    String priority = 'normal',
   }) async {
     final id = await dao.insert(
       RemindersCompanion.insert(
@@ -30,13 +31,14 @@ class ReminderRepository {
         description: Value(description),
         categoryId: Value(categoryId),
         scheduledAt: whenUtc.millisecondsSinceEpoch,
-        timezone: Value(timezone), // ✅ FIX di sini
+        timezone: Value(timezone),
         picturePath: Value(picturePath),
         thumbnailPath: Value(thumbnailPath),
+        priority: Value(priority),
       ),
     );
 
-    // Jadwalkan notifikasi lokal
+    // Jadwalkan notifikasi lokal (will skip if date is in the past)
     await notif.scheduleExact(
       id: id, // aman dipakai sebagai notificationId
       title: 'Cue Mind',
@@ -80,6 +82,9 @@ class ReminderRepository {
     required DateTime whenUtc,
     String? picturePath,
     String? recurrenceRule,
+    String? timezone,
+    String? priority,
+    String? status,
   }) async {
     final hasRecurrence = recurrenceRule != null && recurrenceRule.isNotEmpty;
 
@@ -90,14 +95,17 @@ class ReminderRepository {
         description: Value(description),
         categoryId: Value(categoryId),
         scheduledAt: Value(whenUtc.millisecondsSinceEpoch),
+        timezone: timezone != null ? Value(timezone) : const Value.absent(),
         picturePath: Value(picturePath),
         hasRecurrence: Value(hasRecurrence),
         recurrenceRule: Value(recurrenceRule),
+        priority: priority != null ? Value(priority) : const Value.absent(),
+        status: status != null ? Value(status) : const Value.absent(),
         updatedAt: Value(DateTime.now()),
       ),
     );
 
-    // Reschedule notification
+    // Reschedule notification (will skip if date is in the past)
     await notif.cancel(id);
     await notif.scheduleExact(
       id: id,
