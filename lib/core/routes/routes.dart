@@ -10,7 +10,8 @@ import '../../features/home/views/home_view.dart';
 import '../../features/home/views/reminder_editor_view.dart';
 import '../../features/categories/views/categories_view.dart';
 import '../../features/categories/views/category_view.dart';
-import '../../features/calendar/views/calender_view.dart';
+import '../../features/calendar/views/calendar_view.dart';
+import '../../features/calendar/views/calendar_day_detail_view.dart';
 import '../../features/setting/views/setting_view.dart';
 
 // =============================================================================
@@ -86,11 +87,11 @@ final router = GoRouter(
     // =========================================================================
     // ROOT ROUTES - Full Screen
     // =========================================================================
-    RoutesFactory.createDialogRoute(
+    RoutesFactory.createDialogRouteWithBuilder(
       path: AppRoutes.reminderNew,
       name: RouteNames.reminderNew,
-      child: const ReminderEditorView(),
       navigatorKey: rootNavigatorKey,
+      builder: (state) => _buildReminderNewPage(state),
     ),
 
     RoutesFactory.createDialogRouteWithBuilder(
@@ -100,12 +101,18 @@ final router = GoRouter(
       builder: (state) => _buildReminderEditPage(state),
     ),
 
-    // Category detail route
     RoutesFactory.createPushRoute(
       path: AppRoutes.categoryDetail,
       name: RouteNames.categoryShow,
       navigatorKey: rootNavigatorKey,
       builder: (state) => _buildCategoryDetailPage(state),
+    ),
+
+    RoutesFactory.createPushRoute(
+      path: '/calendar/day/:date',
+      name: 'calendarDay',
+      navigatorKey: rootNavigatorKey,
+      builder: (state) => _buildCalendarDayDetailPage(state),
     ),
   ],
 );
@@ -113,6 +120,21 @@ final router = GoRouter(
 // =============================================================================
 // ROUTE BUILDERS - Routes with Validation
 // =============================================================================
+Widget _buildReminderNewPage(GoRouterState state) {
+  final dateStr = state.uri.queryParameters['date'];
+  DateTime? initialDate;
+
+  if (dateStr != null) {
+    try {
+      initialDate = DateTime.parse(dateStr);
+    } catch (_) {
+      //
+    }
+  }
+
+  return ReminderEditorView(initialDate: initialDate);
+}
+
 Widget _buildReminderEditPage(GoRouterState state) {
   final id = RouteErrorHandler.parseId(state, 'id');
 
@@ -139,4 +161,24 @@ Widget _buildCategoryDetailPage(GoRouterState state) {
   return CategoryView(id: id);
 }
 
+Widget _buildCalendarDayDetailPage(GoRouterState state) {
+  final dateStr = state.pathParameters['date'];
+
+  if (dateStr == null) {
+    return RouteErrorHandler.handleInvalidParameter(
+      rawValue: dateStr,
+      paramName: 'Date',
+    );
+  }
+
+  try {
+    final date = DateTime.parse(dateStr);
+    return CalendarDayDetailView(date: date);
+  } catch (e) {
+    return RouteErrorHandler.handleInvalidParameter(
+      rawValue: dateStr,
+      paramName: 'Date (invalid format)',
+    );
+  }
+}
 

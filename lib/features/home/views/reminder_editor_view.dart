@@ -9,24 +9,15 @@ import '../../../core/services/providers.dart';
 import '../../../core/utils/color_hex.dart';
 import '../../../core/routes/route_config.dart';
 
-/// Unified reminder editor supporting both create and edit modes.
-///
-/// Design decisions:
-/// - Single component reduces code duplication (DRY)
-/// - Mode determined by reminderId (null = create, not null = edit)
-/// - Loads existing data in initState for edit mode
-/// - Sticky bottom bar ensures actions always accessible
-///
-/// Usage:
-///   // Create mode
-///   ReminderEditorView()
-///
-///   // Edit mode
-///   ReminderEditorView(reminderId: 42)
 class ReminderEditorView extends ConsumerStatefulWidget {
   final int? reminderId;
+  final DateTime? initialDate;
 
-  const ReminderEditorView({super.key, this.reminderId});
+  const ReminderEditorView({
+    super.key,
+    this.reminderId,
+    this.initialDate,
+  });
 
   @override
   ConsumerState<ReminderEditorView> createState() => _ReminderEditorViewState();
@@ -59,6 +50,9 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     if (_isEditMode) {
       _loadExistingReminder();
     } else {
+      // Initialize with pre-filled date from calendar or default to tomorrow
+      _scheduledDateTime = widget.initialDate ??
+          DateTime.now().add(const Duration(days: 1));
       _isInitialized = true;
     }
   }

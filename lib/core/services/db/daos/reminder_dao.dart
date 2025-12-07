@@ -25,7 +25,6 @@ class ReminderDao {
       (db.update(db.reminders)..where((t) => t.id.equals(id))).write(
         const RemindersCompanion(
           status: Value('done'),
-          // optional tapi baik untuk audit:
           // updatedAt: Value(DateTime.now()),
         ),
       );
@@ -35,14 +34,14 @@ class ReminderDao {
         RemindersCompanion(
           status: const Value('snoozed'),
           snoozedUntil: Value(utcMillis),
-          scheduledAt: Value(utcMillis),        // <-- FIX: bungkus Value()
+          scheduledAt: Value(utcMillis),
           updatedAt: Value(DateTime.now()),
         ),
       );
 
   // === Queries untuk Home ===
 
-  /// Stream upcoming reminders (status pending/snoozed) dalam jendela jam ke depan.
+  /// Stream upcoming reminders (status pending/snoozed)
   Stream<List<Reminder>> watchUpcomingHours({int hours = 48}) {
     final now = DateTime.now().toUtc().millisecondsSinceEpoch;
     final until =
@@ -59,7 +58,7 @@ class ReminderDao {
     return q.watch();
   }
 
-  /// Stream semua reminder untuk hari tertentu (UTC hari itu).
+  /// Stream semua reminder untuk hari tertentu.
   Stream<List<Reminder>> watchByDayUtc(DateTime dayUtc) {
     final start =
         DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day).millisecondsSinceEpoch;
@@ -74,9 +73,64 @@ class ReminderDao {
     return q.watch();
   }
 
-  // Query single (untuk edit)
+  // Query single
   Future<Reminder?> getById(int id) =>
       (db.select(db.reminders)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  // === Calendar-specific queries ===
+
+  /// Get all reminders for a specific month (UTC).
+  ///
+  /// Used by calendar to calculate density and category highlights.
+  Future<List<Reminder>> getRemindersForMonth(DateTime monthUtc) async {
+    final start = DateTime.utc(monthUtc.year, monthUtc.month, 1)
+        .millisecondsSinceEpoch;
+    final end = DateTime.utc(monthUtc.year, monthUtc.month + 1, 1)
+        .subtract(const Duration(seconds: 1))
+        .millisecondsSinceEpoch;
+
+    final q = db.select(db.reminders)
+      ..where((t) =>
+          t.deletedAt.isNull() &
+          t.scheduledAt.isBetweenValues(start, end))
+      ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
+
+    return q.get();
+  }
+
+  /// Get all reminders for a specific day (UTC).
+  ///
+  /// Used by day detail view.
+  Future<List<Reminder>> getRemindersForDay(DateTime dayUtc) async {
+    final start = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day)
+        .millisecondsSinceEpoch;
+    final end = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day, 23, 59, 59)
+        .millisecondsSinceEpoch;
+
+    final q = db.select(db.reminders)
+      ..where((t) =>
+          t.deletedAt.isNull() &
+          t.scheduledAt.isBetweenValues(start, end))
+      ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
+
+    return q.get();
+  }
+
+  /// Stream reminders for a specific day (for reactive day detail view).
+  Stream<List<Reminder>> watchRemindersForDay(DateTime dayUtc) {
+    final start = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day)
+        .millisecondsSinceEpoch;
+    final end = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day, 23, 59, 59)
+        .millisecondsSinceEpoch;
+
+    final q = db.select(db.reminders)
+      ..where((t) =>
+          t.deletedAt.isNull() &
+          t.scheduledAt.isBetweenValues(start, end))
+      ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
+
+    return q.watch();
+  }
 
   Future<void> update({
     required int id,
