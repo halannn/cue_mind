@@ -14,6 +14,7 @@ import '../../features/calendar/views/calendar_view.dart';
 import '../../features/calendar/views/calendar_day_detail_view.dart';
 import '../../features/calendar/views/monthly_report_view.dart';
 import '../../features/setting/views/setting_view.dart';
+import '../../features/home/views/reminder_detail_view.dart';
 
 // =============================================================================
 // NAVIGATOR KEYS
@@ -103,6 +104,13 @@ final router = GoRouter(
     ),
 
     RoutesFactory.createPushRoute(
+      path: '/reminder/:id',
+      name: 'reminderShow',
+      navigatorKey: rootNavigatorKey,
+      builder: (state) => _buildReminderShowPage(state),
+    ),
+
+    RoutesFactory.createPushRoute(
       path: AppRoutes.categoryDetail,
       name: RouteNames.categoryShow,
       navigatorKey: rootNavigatorKey,
@@ -189,5 +197,18 @@ Widget _buildCalendarDayDetailPage(GoRouterState state) {
       paramName: 'Date (invalid format)',
     );
   }
+}
+
+Widget _buildReminderShowPage(GoRouterState state) {
+  final id = RouteErrorHandler.parseId(state, 'id');
+
+  if (id == null) {
+    return RouteErrorHandler.handleInvalidParameter(
+      rawValue: state.pathParameters['id'],
+      paramName: 'Reminder ID',
+    );
+  }
+
+  return ReminderDetailView(id: id);
 }
 

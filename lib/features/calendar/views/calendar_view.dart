@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/calendar_viewmodel.dart';
 import '../models/calendar_day.dart';
+import '../widgets/today_reminders_section.dart';
 import '../../../core/routes/route_config.dart';
 
 /// Calendar feature main view - Monthly grid with heatmap indicators.
@@ -96,6 +97,7 @@ class CalendarView extends ConsumerWidget {
 
         // Calendar grid
         Expanded(
+          flex: 2, // Give more space to calendar
           child: GestureDetector(
             // Swipe gestures for month navigation
             onHorizontalDragEnd: (details) {
@@ -111,28 +113,13 @@ class CalendarView extends ConsumerWidget {
           ),
         ),
 
-        // Empty state message if no reminders this month
-        if (!monthData.hasReminders)
-          Container(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text(
-                  'No plans this month yet.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start by adding your first reminder.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        const Divider(height: 1),
+
+        // Today's reminders section
+        const Expanded(
+          flex: 1, // Give less space to today's list
+          child: TodayRemindersSection(),
+        ),
       ],
     );
   }
