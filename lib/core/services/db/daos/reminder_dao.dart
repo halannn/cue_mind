@@ -77,4 +77,39 @@ class ReminderDao {
   // Query single (untuk edit)
   Future<Reminder?> getById(int id) =>
       (db.select(db.reminders)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  Future<void> update({
+    required int id,
+    required String title,
+    String? description,
+    int? categoryId,
+    required DateTime whenUtc,
+    String? picturePath,
+    String? recurrenceRule,
+  }) async {
+    final hasRecurrence = recurrenceRule != null && recurrenceRule.isNotEmpty;
+
+    await updateById(
+      id,
+      RemindersCompanion(
+        title: Value(title),
+        description: Value(description),
+        categoryId: Value(categoryId),
+        scheduledAt: Value(whenUtc.millisecondsSinceEpoch),
+        picturePath: Value(picturePath),
+        hasRecurrence: Value(hasRecurrence),
+        recurrenceRule: Value(recurrenceRule),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    // TODO: Reschedule notification - notif service needs to be injected
+    // await notif.cancel(id);
+    // await notif.scheduleExact(
+    //   id: id,
+    //   title: 'Cue Mind',
+    //   body: title,
+    //   fireTimeUtc: whenUtc,
+    // );
+  }
 }

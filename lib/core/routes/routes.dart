@@ -7,7 +7,7 @@ import 'route_error_handler.dart';
 
 import '../navigation/view/main_layout.dart';
 import '../../features/home/views/home_view.dart';
-import '../../features/home/views/new_reminder_view.dart';
+import '../../features/home/views/reminder_editor_view.dart';
 import '../../features/categories/views/categories_view.dart';
 import '../../features/categories/views/category_view.dart';
 import '../../features/calendar/views/calender_view.dart';
@@ -35,10 +35,10 @@ final router = GoRouter(
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.orange),
           const SizedBox(height: 16),
-          const Text('404- Page Not Found', style: TextStyle(fontSize: 20)),
-          const SizedBox(height: 16),
+          const Text('404 - Page Not Found', style: TextStyle(fontSize: 20)),
+          const SizedBox(height: 8),
           Text('Path: ${state.uri.path}'),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go(AppRoutes.home),
             child: const Text('Go Home'),
@@ -56,7 +56,6 @@ final router = GoRouter(
       navigatorKey: shellNavigatorKey,
       builder: (context, state, child) => MainLayout(child: child),
       routes: [
-        // Bottom navigation routes
         RoutesFactory.createBottomNavRoute(
           path: AppRoutes.home,
           name: RouteNames.home,
@@ -90,10 +89,18 @@ final router = GoRouter(
     RoutesFactory.createDialogRoute(
       path: AppRoutes.reminderNew,
       name: RouteNames.reminderNew,
-      child: const NewReminderView(),
+      child: const ReminderEditorView(),
       navigatorKey: rootNavigatorKey,
     ),
 
+    RoutesFactory.createDialogRouteWithBuilder(
+      path: AppRoutes.reminderEdit,
+      name: RouteNames.reminderEdit,
+      navigatorKey: rootNavigatorKey,
+      builder: (state) => _buildReminderEditPage(state),
+    ),
+
+    // Category detail route
     RoutesFactory.createPushRoute(
       path: AppRoutes.categoryDetail,
       name: RouteNames.categoryShow,
@@ -104,19 +111,32 @@ final router = GoRouter(
 );
 
 // =============================================================================
-// ROUTE BUILDERS - Complex Routes with Validation
+// ROUTE BUILDERS - Routes with Validation
 // =============================================================================
+Widget _buildReminderEditPage(GoRouterState state) {
+  final id = RouteErrorHandler.parseId(state, 'id');
+
+  if (id == null) {
+    return RouteErrorHandler.handleInvalidParameter(
+      rawValue: state.pathParameters['id'],
+      paramName: 'Reminder ID',
+    );
+  }
+
+  return ReminderEditorView(reminderId: id);
+}
+
 Widget _buildCategoryDetailPage(GoRouterState state) {
   final id = RouteErrorHandler.parseId(state, 'id');
 
   if (id == null) {
-    return RouteErrorHandler.handleInvalidParamter(
+    return RouteErrorHandler.handleInvalidParameter(
       rawValue: state.pathParameters['id'],
       paramName: 'Category ID',
-      onReturnHome: () {
-        state.namedLocation(RouteNames.categories);
-      },
     );
   }
+
   return CategoryView(id: id);
 }
+
+

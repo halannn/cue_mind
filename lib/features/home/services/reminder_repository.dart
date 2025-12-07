@@ -71,4 +71,39 @@ class ReminderRepository {
     await dao.softDelete(id);
     await notif.cancel(id);
   }
+
+  Future<void> update({
+    required int id,
+    required String title,
+    String? description,
+    int? categoryId,
+    required DateTime whenUtc,
+    String? picturePath,
+    String? recurrenceRule,
+  }) async {
+    final hasRecurrence = recurrenceRule != null && recurrenceRule.isNotEmpty;
+
+    await dao.updateById(
+      id,
+      RemindersCompanion(
+        title: Value(title),
+        description: Value(description),
+        categoryId: Value(categoryId),
+        scheduledAt: Value(whenUtc.millisecondsSinceEpoch),
+        picturePath: Value(picturePath),
+        hasRecurrence: Value(hasRecurrence),
+        recurrenceRule: Value(recurrenceRule),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    // Reschedule notification
+    await notif.cancel(id);
+    await notif.scheduleExact(
+      id: id,
+      title: 'Cue Mind',
+      body: title,
+      fireTimeUtc: whenUtc,
+    );
+  }
 }

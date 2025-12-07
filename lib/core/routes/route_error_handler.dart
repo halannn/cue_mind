@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Handles route parameter validation errors gracefully.
+/// Handles route parameter validation errors.
 class RouteErrorHandler {
   RouteErrorHandler._();
 
-  static Widget handleInvalidParamter({
+  /// Displays error page for invalid route parameters.
+  static Widget handleInvalidParameter({
     required String? rawValue,
     required String paramName,
-    required VoidCallback onReturnHome,
   }) {
-    debugPrint('❌ Invalid $paramName : "$rawValue"');
+    debugPrint('❌ Invalid $paramName: "$rawValue"');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Invalid Parameter'), centerTitle: true),
@@ -29,15 +29,16 @@ class RouteErrorHandler {
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               if (rawValue != null) ...[
                 Text(
-                  'Received : "$rawValue"',
+                  'Received: "$rawValue"',
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
               ],
 
               Text(
@@ -45,16 +46,26 @@ class RouteErrorHandler {
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              FilledButton.icon(
-                onPressed: onReturnHome,
-                label: const Text('Return to home'),
-                icon: const Icon(Icons.home),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+              // Navigation button
+              Builder(
+                builder: (context) => FilledButton.icon(
+                  onPressed: () {
+                    // Try to pop first, if can't pop then go home
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      context.go('/');
+                    }
+                  },
+                  icon: const Icon(Icons.home),
+                  label: const Text('Return to Home'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                   ),
                 ),
               ),
@@ -65,7 +76,6 @@ class RouteErrorHandler {
     );
   }
 
-  /// Parses an integer ID from route parameters with validation.
   static int? parseId(GoRouterState state, String paramName) {
     final rawValue = state.pathParameters[paramName];
     if (rawValue == null) return null;

@@ -31,7 +31,28 @@ class RoutesFactory {
       path: path,
       name: name,
       parentNavigatorKey: navigatorKey,
-      pageBuilder: (_, _) => MaterialPage(fullscreenDialog: true, child: child),
+      pageBuilder: (_, _) => MaterialPage(
+        fullscreenDialog: true,
+        child: child,
+      ),
+    );
+  }
+
+  /// Creates a full-screen dialog route with dynamic builder
+  static GoRoute createDialogRouteWithBuilder({
+    required String path,
+    required String name,
+    required GlobalKey<NavigatorState> navigatorKey,
+    required Widget Function(GoRouterState state) builder,
+  }) {
+    return GoRoute(
+      path: path,
+      name: name,
+      parentNavigatorKey: navigatorKey,
+      pageBuilder: (_, state) => MaterialPage(
+        fullscreenDialog: true,
+        child: builder(state),
+      ),
     );
   }
 
