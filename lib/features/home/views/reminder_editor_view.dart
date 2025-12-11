@@ -516,14 +516,35 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
   /// - Better mobile UX than combined picker
   /// - Matches Material Design patterns
   /// - Allows cancellation at any step
+  ///
+  /// Edit mode considerations:
+  /// - Allows selecting past dates when editing existing reminders
+  /// - New reminders can only be scheduled for future dates
   Future<void> _showDateTimeBottomSheet() async {
     final now = DateTime.now();
+
+    // In edit mode, allow past dates. In create mode, only future dates.
+    final firstDate = _isEditMode && _scheduledDateTime != null && _scheduledDateTime!.isBefore(now)
+        ? DateTime(2020, 1, 1) // Allow far back dates for edit mode
+        : now;
+
+    // Ensure initialDate is within firstDate and lastDate range
+    DateTime initialDate;
+    if (_scheduledDateTime != null) {
+      if (_scheduledDateTime!.isBefore(firstDate)) {
+        initialDate = firstDate;
+      } else {
+        initialDate = _scheduledDateTime!;
+      }
+    } else {
+      initialDate = now;
+    }
 
     // Step 1: Pick date
     final date = await showDatePicker(
       context: context,
-      initialDate: _scheduledDateTime ?? now,
-      firstDate: now,
+      initialDate: initialDate,
+      firstDate: firstDate,
       lastDate: now.add(const Duration(days: 365)),
     );
 

@@ -37,35 +37,63 @@ class MonthlyReportView extends ConsumerWidget {
         title: Text(_formatMonthTitle(vmState.selectedMonth)),
         elevation: 0,
       ),
-      body: GestureDetector(
-        // Swipe gestures for month navigation
-        onHorizontalDragEnd: (details) {
-          if (details.primaryVelocity! < 0) {
-            vm.nextMonth();
-          } else if (details.primaryVelocity! > 0) {
-            vm.previousMonth();
-          }
-        },
-        child: vmState.reportData.when(
-          data: (report) => _buildReportContent(context, vm, report),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => _buildErrorState(context, error),
-        ),
+      body: Column(
+        children: [
+          // Month navigation header - always visible
+          _buildMonthNavigationHeader(context, vm, vmState.selectedMonth),
+
+          const Divider(height: 1),
+
+          // Report content
+          Expanded(
+            child: GestureDetector(
+              // Swipe gestures for month navigation
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity! < 0) {
+                  vm.nextMonth();
+                } else if (details.primaryVelocity! > 0) {
+                  vm.previousMonth();
+                }
+              },
+              child: vmState.reportData.when(
+                data: (report) {
+                  // Debug: Print untuk melihat bulan mana yang dibandingkan
+                  print('🔍 [View] Report month: ${report.month.year}-${report.month.month}');
+                  print('🔍 [View] Selected month: ${vmState.selectedMonth.year}-${vmState.selectedMonth.month}');
+
+                  // Validate that the report month matches selected month
+                  if (report.month.year != vmState.selectedMonth.year ||
+                      report.month.month != vmState.selectedMonth.month) {
+                    // Data is stale, show loading instead
+                    print('⚠️ [View] Data mismatch detected, showing loading');
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return _buildReportContent(context, report);
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => _buildErrorState(context, error),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   String _formatMonthTitle(DateTime month) {
-    return '${DateFormat.MMMM().format(month)} ${month.year} Summary';
+    return 'Monthly Summary';
   }
 
   Widget _buildReportContent(
     BuildContext context,
-    MonthlyReportVM vm,
     MonthlyReport report,
   ) {
     // Check for empty/future states
-    if (report.isFutureMonth) {
+    // Treat only strictly future months (after the start of current month) as future.
+    // Current month should NOT be considered future.
+    final now = DateTime.now().toUtc();
+    final currentMonthStart = DateTime.utc(now.year, now.month, 1);
+    if (report.month.isAfter(currentMonthStart)) {
       return _buildFutureMonthState(context, report.month);
     }
 
@@ -79,10 +107,6 @@ class MonthlyReportView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Month navigation header
-          _buildMonthNavigationHeader(context, vm, report.month),
-
-          const SizedBox(height: 24),
 
           // 1. Total reminders (big number)
           _buildTotalRemindersCard(context, report),
@@ -231,26 +255,31 @@ class MonthlyReportView extends ConsumerWidget {
     MonthlyReportVM vm,
     DateTime month,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: vm.previousMonth,
-          tooltip: 'Previous month',
-        ),
-        Text(
-          DateFormat.yMMMM().format(month),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: vm.nextMonth,
-          tooltip: 'Next month',
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: vm.previousMonth,
+            tooltip: 'Previous month',
+            iconSize: 28,
+          ),
+          Text(
+            DateFormat.yMMMM().format(month),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: vm.nextMonth,
+            tooltip: 'Next month',
+            iconSize: 28,
+          ),
+        ],
+      ),
     );
   }
 
@@ -535,7 +564,7 @@ class MonthlyReportView extends ConsumerWidget {
 
             // Vertical bars chart
             SizedBox(
-              height: 180,
+              height: 170,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -606,12 +635,12 @@ class MonthlyReportView extends ConsumerWidget {
                       fontWeight: FontWeight.w600,
                     ),
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
 
             // Bar
             Container(
               width: double.infinity,
-              height: normalizedHeight * 140, // Max height 140
+              height: normalizedHeight * 120, // Max height 120 to avoid overflow
               decoration: BoxDecoration(
                 color: isWeekend
                     ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
@@ -621,7 +650,7 @@ class MonthlyReportView extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             // Day label
             Text(

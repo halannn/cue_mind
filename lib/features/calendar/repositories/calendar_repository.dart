@@ -124,12 +124,19 @@ class CalendarRepository {
   }) async {
     final month = DateTime.utc(monthUtc.year, monthUtc.month, 1);
 
+    // Debug logging
+    print('🔍 [MonthlyReport] Loading report for: ${month.toIso8601String()}');
+
     // Get all reminders for the month
     final reminders = await reminderDao.getRemindersForMonth(month);
     final totalReminders = reminders.length;
 
+    print('📊 [MonthlyReport] Found $totalReminders reminders for month');
+
     // Status breakdown
     final statusMap = await reminderDao.getMonthStatusBreakdown(month);
+    print('📊 [MonthlyReport] Status breakdown: $statusMap');
+
     final statusBreakdown = StatusBreakdown(
       done: statusMap['done'] ?? 0,
       pending: statusMap['pending'] ?? 0,

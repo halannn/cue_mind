@@ -89,13 +89,20 @@ class ReminderDao {
         .subtract(const Duration(seconds: 1))
         .millisecondsSinceEpoch;
 
+    print('🔍 [DAO] Query reminders for month: ${monthUtc.year}-${monthUtc.month}');
+    print('🔍 [DAO] Start timestamp: $start (${DateTime.fromMillisecondsSinceEpoch(start, isUtc: true)})');
+    print('🔍 [DAO] End timestamp: $end (${DateTime.fromMillisecondsSinceEpoch(end, isUtc: true)})');
+
     final q = db.select(db.reminders)
       ..where((t) =>
           t.deletedAt.isNull() &
           t.scheduledAt.isBetweenValues(start, end))
       ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
 
-    return q.get();
+    final results = await q.get();
+    print('📊 [DAO] Found ${results.length} reminders');
+
+    return results;
   }
 
   /// Get all reminders for a specific day (UTC).

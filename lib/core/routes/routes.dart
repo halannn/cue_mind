@@ -89,14 +89,14 @@ final router = GoRouter(
     // =========================================================================
     // ROOT ROUTES - Full Screen
     // =========================================================================
-    RoutesFactory.createDialogRouteWithBuilder(
+    RoutesFactory.createPushRoute(
       path: AppRoutes.reminderNew,
       name: RouteNames.reminderNew,
       navigatorKey: rootNavigatorKey,
       builder: (state) => _buildReminderNewPage(state),
     ),
 
-    RoutesFactory.createDialogRouteWithBuilder(
+    RoutesFactory.createPushRoute(
       path: AppRoutes.reminderEdit,
       name: RouteNames.reminderEdit,
       navigatorKey: rootNavigatorKey,
@@ -124,7 +124,6 @@ final router = GoRouter(
       builder: (state) => _buildCalendarDayDetailPage(state),
     ),
 
-    // Monthly report route
     RoutesFactory.createPushRoute(
       path: '/calendar/report',
       name: 'monthlyReport',

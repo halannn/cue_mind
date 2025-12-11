@@ -165,15 +165,26 @@ class MonthlyReportVM extends Notifier<MonthlyReportState> {
   }
 
   Future<void> _loadReportData(DateTime month) async {
-    state = state.copyWith(reportData: const AsyncValue.loading());
+    // Don't update state here, just set loading
+    // The selectedMonth should already be set by the caller
 
     try {
       final data = await _repo.getMonthlyReport(month);
-      state = state.copyWith(reportData: AsyncValue.data(data));
+
+      // Only update if this is still the current selected month
+      // (prevents race conditions if user navigates quickly)
+      if (state.selectedMonth.year == month.year &&
+          state.selectedMonth.month == month.month) {
+        state = state.copyWith(reportData: AsyncValue.data(data));
+      }
     } catch (error, stackTrace) {
-      state = state.copyWith(
-        reportData: AsyncValue.error(error, stackTrace),
-      );
+      // Only update if this is still the current selected month
+      if (state.selectedMonth.year == month.year &&
+          state.selectedMonth.month == month.month) {
+        state = state.copyWith(
+          reportData: AsyncValue.error(error, stackTrace),
+        );
+      }
     }
   }
 
@@ -183,7 +194,11 @@ class MonthlyReportVM extends Notifier<MonthlyReportState> {
       state.selectedMonth.month - 1,
       1,
     );
-    state = state.copyWith(selectedMonth: previous);
+    // Immediately set loading state to prevent showing stale data
+    state = MonthlyReportState(
+      selectedMonth: previous,
+      reportData: const AsyncValue.loading(),
+    );
     _loadReportData(previous);
   }
 
@@ -193,13 +208,21 @@ class MonthlyReportVM extends Notifier<MonthlyReportState> {
       state.selectedMonth.month + 1,
       1,
     );
-    state = state.copyWith(selectedMonth: next);
+    // Immediately set loading state to prevent showing stale data
+    state = MonthlyReportState(
+      selectedMonth: next,
+      reportData: const AsyncValue.loading(),
+    );
     _loadReportData(next);
   }
 
   void goToMonth(DateTime month) {
     final normalized = DateTime.utc(month.year, month.month, 1);
-    state = state.copyWith(selectedMonth: normalized);
+    // Immediately set loading state to prevent showing stale data
+    state = MonthlyReportState(
+      selectedMonth: normalized,
+      reportData: const AsyncValue.loading(),
+    );
     _loadReportData(normalized);
   }
 }

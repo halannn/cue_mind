@@ -87,12 +87,6 @@ class CalendarDayDetailView extends ConsumerWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => _addReminderOnDate(context, date),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Reminder'),
-            ),
           ],
         ),
       ),
