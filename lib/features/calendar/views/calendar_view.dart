@@ -269,6 +269,30 @@ class CalendarView extends ConsumerWidget {
         ),
         child: Stack(
           children: [
+            // Top strip bar for multiple categories
+            if (day.hasMultipleCategories && (day.categoryColors ?? const []).isNotEmpty)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SizedBox(
+                  height: 6,
+                  child: Row(
+                    children: (day.categoryColors ?? const []).map((hex) {
+                      Color segColor;
+                      try {
+                        final clean = hex.replaceFirst('#', '');
+                        segColor = Color(int.parse('0xFF$clean'));
+                      } catch (_) {
+                        segColor = theme.colorScheme.surfaceTint;
+                      }
+                      return Expanded(
+                        child: Container(color: segColor),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
             // Date number
             Center(
               child: Text(

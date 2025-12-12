@@ -63,6 +63,7 @@ class CalendarRepository {
       // Calculate category info
       String? dominantColor;
       bool hasMultiple = false;
+  final categoryColors = <String>[];
 
       if (dayReminders.isNotEmpty) {
         final categoryIds = dayReminders
@@ -76,6 +77,14 @@ class CalendarRepository {
           dominantColor = categoryColorMap[catId];
         } else if (categoryIds.length > 1) {
           hasMultiple = true;
+          // Build unique category colors (limit to 4, aggregate rest omitted)
+          for (final catId in categoryIds) {
+            final colorHex = categoryColorMap[catId];
+            if (colorHex != null) {
+              categoryColors.add(colorHex);
+              if (categoryColors.length >= 4) break;
+            }
+          }
         }
       }
 
@@ -84,6 +93,7 @@ class CalendarRepository {
         reminderCount: dayReminders.length,
         dominantCategoryColor: dominantColor,
         hasMultipleCategories: hasMultiple,
+        categoryColors: categoryColors.isEmpty ? null : categoryColors,
         isToday: date == today,
         reminderIds: dayReminders.map((r) => r.id).toList(),
       );

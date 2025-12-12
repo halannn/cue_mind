@@ -6,6 +6,7 @@ class CalendarDay {
   final int reminderCount;
   final String? dominantCategoryColor; // Hex color if single category dominates
   final bool hasMultipleCategories;
+  final List<String>? categoryColors; // Unique category colors for strip bar (hex)
   final bool isToday;
   final List<int> reminderIds; // For quick navigation to day detail
 
@@ -14,6 +15,7 @@ class CalendarDay {
     required this.reminderCount,
     this.dominantCategoryColor,
     required this.hasMultipleCategories,
+  this.categoryColors,
     required this.isToday,
     required this.reminderIds,
   });
@@ -46,14 +48,25 @@ class CalendarDay {
           date == other.date &&
           reminderCount == other.reminderCount &&
           dominantCategoryColor == other.dominantCategoryColor &&
-          hasMultipleCategories == other.hasMultipleCategories;
+          hasMultipleCategories == other.hasMultipleCategories &&
+          _listEquals(categoryColors ?? const [], other.categoryColors ?? const []);
 
   @override
   int get hashCode =>
       date.hashCode ^
       reminderCount.hashCode ^
       dominantCategoryColor.hashCode ^
-      hasMultipleCategories.hashCode;
+  hasMultipleCategories.hashCode ^
+  (categoryColors ?? const []).join('|').hashCode;
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 }
 
 /// Heatmap density levels for visual indicator strength.
