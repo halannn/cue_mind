@@ -74,9 +74,9 @@ class ReminderDetailView extends ConsumerWidget {
 
                   if (confirm == true) {
                     await reminderDao.softDelete(id);
-                    // Pop back after deletion
+
                     if (context.canPop()) context.pop();
-                    // Optionally show a snackbar
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Reminder deleted')),
                     );
@@ -85,7 +85,7 @@ class ReminderDetailView extends ConsumerWidget {
               ),
             ],
           ),
-          body: Padding(
+          body: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,7 +94,8 @@ class ReminderDetailView extends ConsumerWidget {
                   reminder.title,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+
                 Row(
                   children: [
                     const Icon(Icons.access_time, size: 20),
@@ -106,16 +107,16 @@ class ReminderDetailView extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                Row(children: [_statusChip(context, reminder.status)]),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _statusChip(context, reminder.status),
-                    const SizedBox(width: 8),
-                    if (reminder.priority != null)
-                      _priorityChip(context, reminder.priority!),
-                  ],
-                ),
-                const SizedBox(height: 12),
+
+                if (reminder.priority != null)
+                  _buildPriorityRow(context, reminder.priority!),
+
+                const SizedBox(height: 16),
+
                 if (reminder.categoryId != null)
                   StreamBuilder<Category?>(
                     stream: categoryDao.watchById(reminder.categoryId!),
@@ -129,22 +130,26 @@ class ReminderDetailView extends ConsumerWidget {
                         } catch (_) {
                           color = Theme.of(context).colorScheme.primary;
                         }
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            cat.name,
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w600,
+                        return Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Text(
+                              cat.name,
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         );
                       }
                       return const SizedBox.shrink();
@@ -167,40 +172,60 @@ class ReminderDetailView extends ConsumerWidget {
                   const SizedBox(height: 16),
                 ],
 
-                // Photo section
                 if (reminder.picturePath != null &&
                     reminder.picturePath!.isNotEmpty) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: AspectRatio(
-                      aspectRatio: 4 / 3,
-                      child: Image.file(
-                        File(reminder.picturePath!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 48,
-                              color: Colors.grey.shade400,
+                  GestureDetector(
+                    onTap: () =>
+                        _showFullscreenImage(context, reminder.picturePath!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: AspectRatio(
+                        aspectRatio: 4 / 3,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.file(
+                              File(reminder.picturePath!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey.shade200,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 48,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Icon(
+                                  Icons.zoom_in,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                 ],
 
-                // Additional info section
                 if (reminder.hasRecurrence ||
                     reminder.timezone != 'Asia/Makassar')
                   _buildInfoSection(context, reminder),
-
-                const Spacer(),
-
-                // Bottom actions
               ],
             ),
           ),
@@ -211,106 +236,127 @@ class ReminderDetailView extends ConsumerWidget {
 
   Widget _statusChip(BuildContext context, String status) {
     Color c;
+    String label;
     switch (status) {
       case 'done':
         c = Colors.green;
+        label = 'Done';
         break;
       case 'snoozed':
         c = Colors.amber;
+        label = 'Snoozed';
         break;
       default:
         c = Theme.of(context).colorScheme.primary;
+        label = 'Pending';
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
+        color: c,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        status[0].toUpperCase() + status.substring(1),
-        style: TextStyle(color: c, fontWeight: FontWeight.w700),
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
       ),
     );
   }
 
-  Widget _priorityChip(BuildContext context, String priority) {
-    Color c;
+  Widget _buildPriorityRow(BuildContext context, String priority) {
     IconData icon;
     String label;
+    Color color;
 
     switch (priority) {
       case 'high':
-        c = Colors.red;
         icon = Icons.arrow_upward;
-        label = 'High';
+        label = 'High Priority';
+        color = Colors.red;
         break;
       case 'low':
-        c = Colors.grey;
         icon = Icons.arrow_downward;
-        label = 'Low';
+        label = 'Low Priority';
+        color = Colors.grey;
         break;
-      default: // normal
-        c = Colors.blue;
+      default:
         icon = Icons.remove;
-        label = 'Normal';
+        label = 'Normal Priority';
+        color = Theme.of(context).colorScheme.onSurfaceVariant;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: c.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: c),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: c,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildInfoSection(BuildContext context, Reminder reminder) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Additional Information',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
           if (reminder.hasRecurrence && reminder.recurrenceRule != null) ...[
             Row(
               children: [
-                Icon(Icons.repeat, size: 16, color: Colors.grey.shade700),
+                Icon(
+                  Icons.repeat,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Recurrence: ${_getRecurrenceText(reminder.recurrenceRule!)}',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            if (reminder.timezone != 'Asia/Makassar') const SizedBox(height: 8),
           ],
           if (reminder.timezone != 'Asia/Makassar') ...[
             Row(
               children: [
-                Icon(Icons.public, size: 16, color: Colors.grey.shade700),
+                Icon(
+                  Icons.public,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
-                Text(
-                  'Timezone: ${reminder.timezone}',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                Expanded(
+                  child: Text(
+                    'Timezone: ${reminder.timezone}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
               ],
             ),
@@ -325,5 +371,27 @@ class ReminderDetailView extends ConsumerWidget {
     if (rule.contains('FREQ=WEEKLY')) return 'Weekly';
     if (rule.contains('FREQ=MONTHLY')) return 'Monthly';
     return 'Custom';
+  }
+
+  void _showFullscreenImage(BuildContext context, String imagePath) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.file(File(imagePath), fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

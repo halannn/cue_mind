@@ -7,21 +7,10 @@ import '../../../core/services/providers.dart';
 import '../viewmodels/calendar_viewmodel.dart';
 import '../../../core/routes/route_config.dart';
 
-/// Day detail view - shows all reminders for a specific day.
-///
-/// Spec implementation:
-/// - Header with formatted date
-/// - List of reminders with time, title, category chip
-/// - Empty state with call-to-action
-/// - Tap reminder to edit
-/// - FAB for quick add with pre-filled date
 class CalendarDayDetailView extends ConsumerWidget {
   final DateTime date;
 
-  const CalendarDayDetailView({
-    super.key,
-    required this.date,
-  });
+  const CalendarDayDetailView({super.key, required this.date});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,13 +18,17 @@ class CalendarDayDetailView extends ConsumerWidget {
     final remindersAsync = ref.watch(dayRemindersProvider(normalized));
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+      appBar: remindersAsync.maybeWhen(
+        data: (reminders) =>
+            _buildAppBar(context, normalized, reminders.length),
+        orElse: () => AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+          title: Text(_formatDateHeader(normalized)),
+          elevation: 0,
         ),
-        title: Text(_formatDateHeader(normalized)),
-        elevation: 0,
       ),
       body: remindersAsync.when(
         data: (reminders) => reminders.isEmpty
@@ -61,12 +54,39 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Format date header: "Tue, 14 May 2025"
   String _formatDateHeader(DateTime date) {
     return DateFormat.yMMMMEEEEd().format(date);
   }
 
-  /// Empty state widget
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    DateTime date,
+    int reminderCount,
+  ) {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => context.pop(),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_formatDateHeader(date)),
+          if (reminderCount > 0)
+            Text(
+              '$reminderCount reminder${reminderCount != 1 ? 's' : ''}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
+      elevation: 0,
+    );
+  }
+
   Widget _buildEmptyState(BuildContext context, DateTime date) {
     return Center(
       child: Padding(
@@ -77,7 +97,9 @@ class CalendarDayDetailView extends ConsumerWidget {
             Icon(
               Icons.event_available_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
@@ -93,7 +115,6 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Reminder list widget
   Widget _buildReminderList(
     BuildContext context,
     WidgetRef ref,
@@ -110,7 +131,6 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Individual reminder card
   Widget _buildReminderCard(
     BuildContext context,
     WidgetRef ref,
@@ -126,10 +146,7 @@ class CalendarDayDetailView extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant,
-          width: 1,
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
       ),
       child: InkWell(
         onTap: () => _editReminder(context, reminder.id),
@@ -139,12 +156,8 @@ class CalendarDayDetailView extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Time indicator
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(6),
@@ -160,12 +173,10 @@ class CalendarDayDetailView extends ConsumerWidget {
 
               const SizedBox(width: 12),
 
-              // Title and metadata
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
                     Text(
                       reminder.title,
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -175,7 +186,6 @@ class CalendarDayDetailView extends ConsumerWidget {
 
                     const SizedBox(height: 4),
 
-                    // Description (if present)
                     if (reminder.description != null &&
                         reminder.description!.isNotEmpty)
                       Padding(
@@ -190,23 +200,18 @@ class CalendarDayDetailView extends ConsumerWidget {
                         ),
                       ),
 
-                    // Metadata row (status, priority, category, recurrence)
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        // Status chip
                         _buildStatusChip(theme, reminder.status),
 
-                        // Priority chip
                         if (reminder.priority != null)
                           _buildPriorityChip(theme, reminder.priority!),
 
-                        // Category chip
                         if (reminder.categoryId != null)
                           _buildCategoryChip(ref, reminder.categoryId!),
 
-                        // Recurrence indicator
                         if (reminder.hasRecurrence)
                           Icon(
                             Icons.repeat,
@@ -219,10 +224,11 @@ class CalendarDayDetailView extends ConsumerWidget {
                 ),
               ),
 
-              // Chevron indicator
               Icon(
                 Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
               ),
             ],
           ),
@@ -231,9 +237,7 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Category color chip widget
   Widget _buildCategoryChip(WidgetRef ref, int categoryId) {
-    // Create a stream provider for this category
     final categoryProvider = StreamProvider.autoDispose((streamRef) {
       final dao = streamRef.watch(categoryDaoProvider);
       return dao.watchById(categoryId);
@@ -258,7 +262,10 @@ class CalendarDayDetailView extends ConsumerWidget {
           decoration: BoxDecoration(
             color: chipColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
+            border: Border.all(
+              color: chipColor.withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
           child: Text(
             category.name,
@@ -275,7 +282,6 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Status chip widget
   Widget _buildStatusChip(ThemeData theme, String status) {
     Color chipColor;
     String label;
@@ -289,22 +295,21 @@ class CalendarDayDetailView extends ConsumerWidget {
         chipColor = Colors.amber;
         label = 'Snoozed';
         break;
-      default: // pending
+      default:
         chipColor = theme.colorScheme.primary;
         label = 'Pending';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: chipColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
+        color: chipColor,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: chipColor,
+        style: const TextStyle(
+          color: Colors.white,
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
@@ -312,7 +317,6 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Priority chip widget
   Widget _buildPriorityChip(ThemeData theme, String priority) {
     Color chipColor;
     IconData icon;
@@ -322,15 +326,15 @@ class CalendarDayDetailView extends ConsumerWidget {
       case 'high':
         chipColor = Colors.red;
         icon = Icons.arrow_upward;
-        label = 'Tinggi';
+        label = 'High';
         break;
       case 'low':
         chipColor = Colors.grey;
         icon = Icons.arrow_downward;
-        label = 'Rendah';
+        label = 'Low';
         break;
-      default: // normal
-        chipColor = Colors.blue;
+      default:
+        chipColor = theme.colorScheme.onSurfaceVariant;
         icon = Icons.remove;
         label = 'Normal';
     }
@@ -338,21 +342,21 @@ class CalendarDayDetailView extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: chipColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: chipColor.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: chipColor),
-          const SizedBox(width: 4),
+          Icon(icon, size: 11, color: chipColor),
+          const SizedBox(width: 3),
           Text(
             label,
             style: TextStyle(
               color: chipColor,
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -360,12 +364,10 @@ class CalendarDayDetailView extends ConsumerWidget {
     );
   }
 
-  /// Navigate to reminder editor with date pre-filled
   void _addReminderOnDate(BuildContext context, DateTime date) {
     context.push('${AppRoutes.reminderNew}?date=${date.toIso8601String()}');
   }
 
-  /// Navigate to reminder detail view
   void _editReminder(BuildContext context, int reminderId) {
     context.push('/reminder/$reminderId');
   }
