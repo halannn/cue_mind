@@ -49,7 +49,7 @@ class ReminderRepository {
     return id;
   }
 
-  Stream<List<Reminder>> watchUpcoming({int hours = 48}) =>
+  Stream<List<Reminder>> watchUpcoming({int hours = 72}) =>
       dao.watchUpcomingHours(hours: hours);
 
   Future<void> markDone(int id) async {
@@ -58,13 +58,26 @@ class ReminderRepository {
   }
 
   Future<void> snooze(int id, Duration duration) async {
-    final newWhen = DateTime.now().toUtc().add(duration);
+    // Get current reminder data to use its scheduled time as base
+    final reminder = await dao.getById(id);
+    if (reminder == null) return;
+
+    // Calculate new time based on reminder's original scheduled time
+    final originalTime = DateTime.fromMillisecondsSinceEpoch(
+      reminder.scheduledAt,
+      isUtc: true,
+    );
+    final newWhen = originalTime.add(duration);
+
     await dao.snoozeTo(id, newWhen.millisecondsSinceEpoch);
     await notif.cancel(id);
+
+    // Get reminder again to display correct title in notification
+    final updatedReminder = await dao.getById(id);
     await notif.scheduleExact(
       id: id,
       title: 'Cue Mind',
-      body: 'Snoozed reminder',
+      body: updatedReminder?.title ?? 'Snoozed reminder',
       fireTimeUtc: newWhen,
     );
   }

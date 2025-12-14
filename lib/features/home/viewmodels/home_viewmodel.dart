@@ -5,7 +5,7 @@ import '../../../core/services/providers.dart';
 import '../services/reminder_repository.dart';
 
 class HomeState {
-  final AsyncValue<List<Reminder>> upcoming; // 48h default
+  final AsyncValue<List<Reminder>> upcoming; // 3 days default
   final String? error;
   const HomeState({this.upcoming = const AsyncValue.loading(), this.error});
 

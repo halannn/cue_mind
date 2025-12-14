@@ -42,7 +42,7 @@ class ReminderDao {
   // === Queries untuk Home ===
 
   /// Stream upcoming reminders (status pending/snoozed)
-  Stream<List<Reminder>> watchUpcomingHours({int hours = 48}) {
+  Stream<List<Reminder>> watchUpcomingHours({int hours = 72}) {
     final now = DateTime.now().toUtc().millisecondsSinceEpoch;
     final until =
         DateTime.now().toUtc().add(Duration(hours: hours)).millisecondsSinceEpoch;

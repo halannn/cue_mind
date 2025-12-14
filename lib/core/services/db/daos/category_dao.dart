@@ -35,10 +35,16 @@ class CategoryDao {
     return q.watch();
   }
 
-    Stream<Category?> watchById(int id) {
+  Stream<Category?> watchById(int id) {
     final q = (db.select(db.categories)
       ..where((t) => t.id.equals(id) & t.deletedAt.isNull()));
     return q.watchSingleOrNull();
+  }
+
+  Future<Category?> getById(int id) {
+    final q = (db.select(db.categories)
+      ..where((t) => t.id.equals(id) & t.deletedAt.isNull()));
+    return q.getSingleOrNull();
   }
 
   Future<int> insert(CategoriesCompanion data) =>
