@@ -66,7 +66,7 @@ class _EmptyState extends StatelessWidget {
             Icon(Icons.photo_camera_back_outlined, size: 56),
             SizedBox(height: 12),
             Text(
-              'Belum ada reminder untuk 48 jam ke depan.\nTap tombol + untuk membuat.',
+              'No reminders for the next 48 hours.\nTap + button to create.',
               textAlign: TextAlign.center,
             ),
           ],
@@ -129,10 +129,10 @@ class _ReminderTile extends StatelessWidget {
           }
         },
         itemBuilder: (_) => const [
-          PopupMenuItem(value: 'done', child: Text('Tandai selesai')),
-          PopupMenuItem(value: 'snooze10', child: Text('Tunda 10 menit')),
-          PopupMenuItem(value: 'snooze60', child: Text('Tunda 1 jam')),
-          PopupMenuItem(value: 'delete', child: Text('Hapus')),
+          PopupMenuItem(value: 'done', child: Text('Mark as done')),
+          PopupMenuItem(value: 'snooze10', child: Text('Snooze 10 minutes')),
+          PopupMenuItem(value: 'snooze60', child: Text('Snooze 1 hour')),
+          PopupMenuItem(value: 'delete', child: Text('Delete')),
         ],
       ),
     );

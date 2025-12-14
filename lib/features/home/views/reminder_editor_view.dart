@@ -13,34 +13,26 @@ class ReminderEditorView extends ConsumerStatefulWidget {
   final int? reminderId;
   final DateTime? initialDate;
 
-  const ReminderEditorView({
-    super.key,
-    this.reminderId,
-    this.initialDate,
-  });
+  const ReminderEditorView({super.key, this.reminderId, this.initialDate});
 
   @override
   ConsumerState<ReminderEditorView> createState() => _ReminderEditorViewState();
 }
 
 class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
-  // Form controllers
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // Reminder data
   DateTime? _scheduledDateTime;
   int? _categoryId;
   String? _photoPath;
-  String _priority = 'normal'; // normal/low/high
-  String _status = 'pending'; // pending/done/snoozed
+  String _priority = 'normal';
+  String _status = 'pending';
 
-  // Recurrence state
   RecurrenceType _recurrenceType = RecurrenceType.none;
   String? _recurrenceRule;
 
-  // UI state
   bool _isLoading = false;
   bool _isInitialized = false;
 
@@ -52,30 +44,22 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     if (_isEditMode) {
       _loadExistingReminder();
     } else {
-      // Initialize with pre-filled date from calendar or default to tomorrow
-      _scheduledDateTime = widget.initialDate ??
-          DateTime.now().add(const Duration(days: 1));
+      _scheduledDateTime =
+          widget.initialDate ?? DateTime.now().add(const Duration(days: 1));
       _isInitialized = true;
     }
   }
 
-  /// Loads existing reminder data in edit mode.
-  ///
-  /// Why async in initState?
-  /// - Need to fetch data from database
-  /// - setState updates UI once data loaded
-  /// - Loading indicator shown until complete
   Future<void> _loadExistingReminder() async {
     try {
       final dao = ref.read(reminderDaoProvider);
       final reminder = await dao.getById(widget.reminderId!);
 
       if (reminder == null) {
-        // Reminder not found - show error and go back
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Reminder tidak ditemukan')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Reminder not found')));
           context.pop();
         }
         return;
@@ -101,20 +85,14 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading reminder: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading reminder: $e')));
         context.pop();
       }
     }
   }
 
-  /// Parses recurrence rule string to enum.
-  ///
-  /// Why separate method?
-  /// - Centralized parsing logic
-  /// - Easy to extend for custom rules
-  /// - Testable independently
   RecurrenceType _parseRecurrenceType(String? rule) {
     if (rule == null) return RecurrenceType.none;
     if (rule.contains('FREQ=DAILY')) return RecurrenceType.daily;
@@ -132,19 +110,21 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading indicator while fetching data in edit mode
     if (!_isInitialized) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Loading...'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        appBar: AppBar(title: const Text('Loading...')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          context.pop();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -155,7 +135,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       ),
       body: Column(
         children: [
-          // Scrollable content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -186,7 +165,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
             ),
           ),
 
-          // Bottom action bar
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
@@ -208,74 +186,45 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
           ),
         ],
       ),
+      ),
     );
   }
 
-  // ===========================================================================
-  // TITLE FIELD
-  // ===========================================================================
-
-  /// Title input field with validation.
-  ///
-  /// Spec requirements:
-  /// - Material text field
-  /// - Required
-  /// - Error: "Judul harus diisi"
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
       decoration: const InputDecoration(
-        labelText: 'Judul',
+        labelText: 'Title',
         border: OutlineInputBorder(),
       ),
       textCapitalization: TextCapitalization.sentences,
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return 'Judul harus diisi'; // ✅ Per spec
+          return 'Title is required';
         }
         return null;
       },
     );
   }
 
-  // ===========================================================================
-  // DESCRIPTION FIELD
-  // ===========================================================================
-
-  /// Description input field.
-  ///
-  /// Spec requirements:
-  /// - Multi-line
-  /// - Grows up to 4 lines before scrolling
-  /// - Optional
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
       decoration: const InputDecoration(
-        labelText: 'Deskripsi (opsional)',
+        labelText: 'Description (optional)',
         border: OutlineInputBorder(),
       ),
-      maxLines: 4, // ✅ Per spec
+      maxLines: 4,
       textCapitalization: TextCapitalization.sentences,
     );
   }
 
-  // ===========================================================================
-  // CATEGORY SELECTOR (Color Chip)
-  // ===========================================================================
-
-  /// Category selector with color chip matching Categories feature.
-  ///
-  /// Design decisions:
-  /// - Uses color chips for consistency with Categories view
-  /// - Bottom sheet picker (not dropdown) for better mobile UX
-  /// - Shows "Kelola kategori" footer per spec
   Widget _buildCategorySelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Kategori (opsional)', // ✅ Per spec
+          'Category (optional)',
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: 8),
@@ -301,12 +250,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     );
   }
 
-  /// Category color chip display.
-  ///
-  /// Why FutureBuilder?
-  /// - Category might be deleted after reminder created
-  /// - Need to fetch fresh data each time
-  /// - Handles null case gracefully
   Widget _buildCategoryChip() {
     return FutureBuilder<Category?>(
       future: _categoryId == null
@@ -345,13 +288,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     );
   }
 
-  /// Shows bottom sheet category picker.
-  ///
-  /// Spec requirements:
-  /// - Bottom sheet (not dropdown)
-  /// - List of categories with color chips
-  /// - "Kelola kategori" footer button
-  /// - Optional: Search bar (future enhancement)
   Future<void> _showCategoryBottomSheet() async {
     final categories = await ref.read(categoryDaoProvider).allOnce();
 
@@ -368,13 +304,12 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
         builder: (context, scrollController) {
           return Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     Text(
-                      'Pilih Kategori',
+                      'Select Category',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const Spacer(),
@@ -387,13 +322,11 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
               ),
               const Divider(height: 1),
 
-              // Category list
               Expanded(
                 child: ListView(
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
-                    // None option
                     ListTile(
                       leading: const CircleAvatar(
                         radius: 16,
@@ -403,11 +336,10 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                       trailing: _categoryId == null
                           ? const Icon(Icons.check, color: Colors.blue)
                           : null,
-                      onTap: () => Navigator.pop(context, -1), // -1 = clear
+                      onTap: () => Navigator.pop(context, -1),
                     ),
                     const Divider(height: 1),
 
-                    // Categories with color chips
                     ...categories.map((cat) {
                       return ListTile(
                         leading: CircleAvatar(
@@ -425,7 +357,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                 ),
               ),
 
-              // ✅ Footer button per spec
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -434,7 +365,7 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                     Navigator.pop(context);
                     AppRoutes.goCategories(context);
                   },
-                  child: const Text('Kelola Kategori'),
+                  child: const Text('Manage Categories'),
                 ),
               ),
             ],
@@ -450,16 +381,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     }
   }
 
-  // ===========================================================================
-  // DATE & TIME PICKER
-  // ===========================================================================
-
-  /// Date & time picker button with recurrence indicator.
-  ///
-  /// Spec requirements:
-  /// - Main button: "Pilih tanggal & waktu"
-  /// - Shows current date/time if selected
-  /// - Shows recurrence summary below if set
   Widget _buildDateTimePicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -471,13 +392,14 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
           ),
           child: Text(
             _scheduledDateTime == null
-                ? 'Pilih tanggal & waktu' // ✅ Per spec
-                : DateFormat('EEE, d MMM yyyy • HH:mm').format(_scheduledDateTime!),
+                ? 'Select date & time'
+                : DateFormat(
+                    'EEE, d MMM yyyy • HH:mm',
+                  ).format(_scheduledDateTime!),
             style: const TextStyle(fontSize: 16),
           ),
         ),
 
-        // ✅ Recurrence summary per spec
         if (_recurrenceType != RecurrenceType.none) ...[
           const SizedBox(height: 8),
           Container(
@@ -500,7 +422,7 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                 const Spacer(),
                 TextButton(
                   onPressed: _showRecurrenceOption,
-                  child: const Text('Ubah'),
+                  child: const Text('Change'),
                 ),
               ],
             ),
@@ -510,25 +432,16 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     );
   }
 
-  /// Shows date and time pickers sequentially.
-  ///
-  /// Why sequential?
-  /// - Better mobile UX than combined picker
-  /// - Matches Material Design patterns
-  /// - Allows cancellation at any step
-  ///
-  /// Edit mode considerations:
-  /// - Allows selecting past dates when editing existing reminders
-  /// - New reminders can only be scheduled for future dates
   Future<void> _showDateTimeBottomSheet() async {
     final now = DateTime.now();
 
-    // In edit mode, allow past dates. In create mode, only future dates.
-    final firstDate = _isEditMode && _scheduledDateTime != null && _scheduledDateTime!.isBefore(now)
-        ? DateTime(2020, 1, 1) // Allow far back dates for edit mode
+    final firstDate =
+        _isEditMode &&
+            _scheduledDateTime != null &&
+            _scheduledDateTime!.isBefore(now)
+        ? DateTime(2020, 1, 1)
         : now;
 
-    // Ensure initialDate is within firstDate and lastDate range
     DateTime initialDate;
     if (_scheduledDateTime != null) {
       if (_scheduledDateTime!.isBefore(firstDate)) {
@@ -540,7 +453,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       initialDate = now;
     }
 
-    // Step 1: Pick date
     final date = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -550,7 +462,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
 
     if (date == null || !mounted) return;
 
-    // Step 2: Pick time
     final time = await showTimePicker(
       context: context,
       initialTime: _scheduledDateTime != null
@@ -570,18 +481,11 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       );
     });
 
-    // Step 3: Show recurrence option after date/time selected
     if (mounted) {
       _showRecurrenceOption();
     }
   }
 
-  /// Shows recurrence picker bottom sheet.
-  ///
-  /// Spec requirements:
-  /// - Options: Tidak berulang, Harian, Mingguan, Bulanan, Kustom
-  /// - Modal sheet (full or half)
-  /// - Updates summary instantly
   Future<void> _showRecurrenceOption() async {
     final selected = await showModalBottomSheet<RecurrenceType>(
       context: context,
@@ -591,13 +495,12 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Pengulangan',
+              'Recurrence',
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
           const Divider(height: 1),
 
-          // ✅ All recurrence options per spec
           ...RecurrenceType.values.map((type) {
             return ListTile(
               title: Text(type.displayName),
@@ -620,16 +523,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     }
   }
 
-  /// Converts RecurrenceType enum to iCalendar RRULE string.
-  ///
-  /// Format: RFC 5545 (iCalendar standard)
-  /// Example: "FREQ=DAILY;INTERVAL=1"
-  ///
-  /// Why iCalendar format?
-  /// - Industry standard
-  /// - Supported by most calendar systems
-  /// - Easy to parse and validate
-  /// - Extensible for complex rules
   String? _buildRecurrenceRule(RecurrenceType type) {
     switch (type) {
       case RecurrenceType.none:
@@ -641,72 +534,53 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       case RecurrenceType.monthly:
         return 'FREQ=MONTHLY;INTERVAL=1';
       case RecurrenceType.custom:
-        // TODO: Implement custom rule builder UI
-        return 'FREQ=WEEKLY;INTERVAL=2'; // Example
+        return 'FREQ=WEEKLY;INTERVAL=2';
     }
   }
 
-  // ===========================================================================
-  // PHOTO SECTION
-  // ===========================================================================
-
-  /// Photo attachment section.
-  ///
-  /// Spec requirements:
-  /// - Before attach: "Lampirkan foto" button
-  /// - After attach: 4:3 preview + "Ganti foto" + "Hapus" buttons
-  /// - Tapping preview opens full-screen viewer
   Widget _buildPhotoSection() {
     if (_photoPath == null) {
       return OutlinedButton.icon(
         onPressed: _pickPhoto,
         icon: const Icon(Icons.camera_alt),
-        label: const Text('Lampirkan foto'), // ✅ Per spec
+        label: const Text('Attach photo'),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
       );
     }
 
-    // ✅ After attach: 4:3 preview per spec
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 4:3 Image preview with tap to view
         GestureDetector(
           onTap: _showFullScreenImage,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: AspectRatio(
-              aspectRatio: 4 / 3, // ✅ Per spec
-              child: Image.file(
-                File(_photoPath!),
-                fit: BoxFit.cover,
-              ),
+              aspectRatio: 4 / 3,
+              child: Image.file(File(_photoPath!), fit: BoxFit.cover),
             ),
           ),
         ),
         const SizedBox(height: 12),
 
-        // ✅ Action buttons per spec
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _pickPhoto,
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('Ganti foto'), // ✅ Per spec
+                onPressed: () => setState(() => _photoPath = null),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => setState(() => _photoPath = null),
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Hapus'), // ✅ Per spec
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
+                onPressed: _pickPhoto,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Change photo'),
               ),
             ),
           ],
@@ -715,7 +589,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     );
   }
 
-  /// Picks and saves photo using ImageService.
   Future<void> _pickPhoto() async {
     final img = ref.read(imageServiceProvider);
     final path = await img.pickAndSave();
@@ -724,14 +597,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     }
   }
 
-  /// Opens full-screen zoomable image viewer.
-  ///
-  /// Spec requirements:
-  /// - Full-screen modal viewer
-  /// - Pinch to zoom
-  /// - Double tap to zoom
-  /// - Panning
-  /// - Close with down-swipe or X icon
   void _showFullScreenImage() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -741,103 +606,86 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     );
   }
 
-  // ===========================================================================
-  // PRIORITY & STATUS SELECTORS
-  // ===========================================================================
-
-  /// Priority selector widget (low/normal/high).
-  /// Available in both create and edit modes.
   Widget _buildPrioritySelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Prioritas',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Priority', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
-        SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(
-              value: 'low',
-              label: Text('Rendah'),
-              icon: Icon(Icons.arrow_downward, size: 16),
-            ),
-            ButtonSegment(
-              value: 'normal',
-              label: Text('Normal'),
-              icon: Icon(Icons.remove, size: 16),
-            ),
-            ButtonSegment(
-              value: 'high',
-              label: Text('Tinggi'),
-              icon: Icon(Icons.arrow_upward, size: 16),
-            ),
-          ],
-          selected: {_priority},
-          onSelectionChanged: (Set<String> newSelection) {
-            setState(() {
-              _priority = newSelection.first;
-            });
-          },
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'low',
+                label: Text('Low'),
+                icon: Icon(Icons.arrow_downward, size: 16),
+              ),
+              ButtonSegment(
+                value: 'normal',
+                label: Text('Normal'),
+                icon: Icon(Icons.remove, size: 16),
+              ),
+              ButtonSegment(
+                value: 'high',
+                label: Text('High'),
+                icon: Icon(Icons.arrow_upward, size: 16),
+              ),
+            ],
+            selected: {_priority},
+            onSelectionChanged: (Set<String> newSelection) {
+              setState(() {
+                _priority = newSelection.first;
+              });
+            },
+          ),
         ),
       ],
     );
   }
 
-  /// Status selector widget (pending/done/snoozed).
-  /// Only available in edit mode (status is always 'pending' for new reminders).
   Widget _buildStatusSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Status',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Status', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
-        SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(
-              value: 'pending',
-              label: Text('Pending'),
-              icon: Icon(Icons.schedule, size: 16),
-            ),
-            ButtonSegment(
-              value: 'done',
-              label: Text('Selesai'),
-              icon: Icon(Icons.check_circle, size: 16),
-            ),
-            ButtonSegment(
-              value: 'snoozed',
-              label: Text('Snooze'),
-              icon: Icon(Icons.snooze, size: 16),
-            ),
-          ],
-          selected: {_status},
-          onSelectionChanged: (Set<String> newSelection) {
-            setState(() {
-              _status = newSelection.first;
-            });
-          },
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'pending',
+                label: Text('Pending'),
+                icon: Icon(Icons.schedule, size: 16),
+              ),
+              ButtonSegment(
+                value: 'done',
+                label: Text('Done'),
+                icon: Icon(Icons.check_circle, size: 16),
+              ),
+              ButtonSegment(
+                value: 'snoozed',
+                label: Text('Snoozed'),
+                icon: Icon(Icons.snooze, size: 16),
+              ),
+            ],
+            selected: {_status},
+            onSelectionChanged: (Set<String> newSelection) {
+              setState(() {
+                _status = newSelection.first;
+              });
+            },
+          ),
         ),
       ],
     );
   }
 
-  // ===========================================================================
-  // BOTTOM ACTION BAR
-  // ===========================================================================
-
-  /// Create mode button.
-  ///
-  /// Spec: "Simpan & Jadwalkan"
   Widget _buildCreateButton() {
     return FilledButton(
       onPressed: _isLoading ? null : _saveReminder,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-      ),
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
       child: _isLoading
           ? const SizedBox(
               height: 20,
@@ -847,17 +695,10 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                 color: Colors.white,
               ),
             )
-          : const Text(
-              'Simpan & Jadwalkan',
-              style: TextStyle(fontSize: 16),
-            ),
+          : const Text('Save & Schedule', style: TextStyle(fontSize: 16)),
     );
   }
 
-  /// Edit mode buttons.
-  ///
-  /// Spec: "Hapus" (red) + "Simpan Perubahan"
-  /// Layout: 1:2 ratio (delete smaller than save)
   Widget _buildEditModeButtons() {
     return Row(
       children: [
@@ -869,10 +710,7 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
               side: const BorderSide(color: Color(0xFFD32F2F)),
               minimumSize: const Size.fromHeight(48),
             ),
-            child: const Text(
-              'Hapus',
-              style: TextStyle(fontSize: 16),
-            ),
+            child: const Text('Delete', style: TextStyle(fontSize: 16)),
           ),
         ),
         const SizedBox(width: 12),
@@ -892,41 +730,19 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
                       color: Colors.white,
                     ),
                   )
-                : const Text(
-                    'Simpan Perubahan',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                : const Text('Save Changes', style: TextStyle(fontSize: 16)),
           ),
         ),
       ],
     );
   }
 
-  // ===========================================================================
-  // ACTIONS
-  // ===========================================================================
-
-  /// Saves reminder (create or update).
-  ///
-  /// Validation:
-  /// 1. Form validation (title required)
-  /// 2. Date/time selected
-  ///
-  /// Flow:
-  /// 1. Validate inputs
-  /// 2. Call repository create/update
-  /// 3. Pop with result
-  /// 4. Show success message
   Future<void> _saveReminder() async {
-    // Validate form
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate date/time selected
     if (_scheduledDateTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pilih tanggal & waktu terlebih dahulu'),
-        ),
+        const SnackBar(content: Text('Please select date & time first')),
       );
       return;
     }
@@ -937,7 +753,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       final repo = ref.read(reminderRepositoryProvider);
 
       if (_isEditMode) {
-        // Update existing reminder
         await repo.update(
           id: widget.reminderId!,
           title: _titleController.text.trim(),
@@ -953,13 +768,12 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
         );
 
         if (mounted) {
-          context.pop(true); // Pop with success result
+          context.pop(true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Reminder berhasil diperbarui')),
+            const SnackBar(content: Text('Reminder updated successfully')),
           );
         }
       } else {
-        // Create new reminder
         await repo.create(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim().isEmpty
@@ -974,15 +788,15 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
         if (mounted) {
           context.pop(true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Reminder berhasil dibuat')),
+            const SnackBar(content: Text('Reminder created successfully')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -991,31 +805,23 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
     }
   }
 
-  /// Deletes reminder with confirmation.
-  ///
-  /// Spec requirements:
-  /// - Confirmation dialog: "Hapus pengingat ini?"
-  /// - Buttons: "Hapus" (red) + "Batal"
-  /// - Non-reversible warning
   Future<void> _deleteReminder() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus pengingat ini?'), // ✅ Per spec
-        content: const Text(
-          'Pengingat yang dihapus tidak dapat dikembalikan.',
-        ),
+        title: const Text('Delete this reminder?'),
+        content: const Text('Deleted reminders cannot be recovered.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'), // ✅ Per spec
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD32F2F), // ✅ Red per spec
+              backgroundColor: const Color(0xFFD32F2F),
             ),
-            child: const Text('Hapus'), // ✅ Per spec
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -1032,14 +838,14 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
       if (mounted) {
         context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reminder berhasil dihapus')),
+          const SnackBar(content: Text('Reminder deleted successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -1049,22 +855,6 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
   }
 }
 
-// =============================================================================
-// FULL SCREEN IMAGE VIEWER
-// =============================================================================
-
-/// Full-screen zoomable image viewer.
-///
-/// Spec requirements:
-/// - Pinch to zoom (0.5x - 4x)
-/// - Double tap to zoom (toggles between 1x and 2.5x)
-/// - Panning
-/// - Close with X icon or back button
-///
-/// Implementation:
-/// - Uses InteractiveViewer for zoom/pan
-/// - TransformationController for programmatic zoom
-/// - Black background for focus
 class _FullScreenImageViewer extends StatefulWidget {
   final String imagePath;
 
@@ -1086,7 +876,7 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // ✅ Focus on image
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -1096,55 +886,30 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
         ),
       ),
       body: GestureDetector(
-        onDoubleTap: _handleDoubleTap, // ✅ Double tap zoom per spec
+        onDoubleTap: _handleDoubleTap,
         child: InteractiveViewer(
           transformationController: _transformationController,
-          minScale: 0.5, // ✅ Zoom out limit
-          maxScale: 4.0, // ✅ Zoom in limit per spec
-          child: Center(
-            child: Image.file(File(widget.imagePath)),
-          ),
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Center(child: Image.file(File(widget.imagePath))),
         ),
       ),
     );
   }
 
-  /// Handles double tap to toggle zoom.
-  ///
-  /// Behavior:
-  /// - If zoomed in (>1.5x): Reset to 1x
-  /// - If at 1x: Zoom to 2.5x
-  ///
-  /// Why 1.5x threshold?
-  /// - Accounts for minor scale variations
-  /// - Prevents accidental zoom out
   void _handleDoubleTap() {
     const double targetScale = 2.5;
     final Matrix4 currentTransform = _transformationController.value;
     final double currentScale = currentTransform.getMaxScaleOnAxis();
 
     if (currentScale > 1.5) {
-      // Zoom out to normal
       _transformationController.value = Matrix4.identity();
     } else {
-      // Zoom in
       _transformationController.value = Matrix4.identity()..scale(targetScale);
     }
   }
 }
 
-// =============================================================================
-// RECURRENCE TYPE ENUM
-// =============================================================================
-
-/// Recurrence type options per spec.
-///
-/// Spec requirements:
-/// - Tidak berulang
-/// - Harian
-/// - Mingguan
-/// - Bulanan
-/// - Kustom
 enum RecurrenceType {
   none,
   daily,
@@ -1155,15 +920,15 @@ enum RecurrenceType {
   String get displayName {
     switch (this) {
       case RecurrenceType.none:
-        return 'Tidak berulang';
+        return 'No Recurrence';
       case RecurrenceType.daily:
-        return 'Harian';
+        return 'Daily';
       case RecurrenceType.weekly:
-        return 'Mingguan';
+        return 'Weekly';
       case RecurrenceType.monthly:
-        return 'Bulanan';
+        return 'Monthly';
       case RecurrenceType.custom:
-        return 'Kustom';
+        return 'Custom';
     }
   }
 }

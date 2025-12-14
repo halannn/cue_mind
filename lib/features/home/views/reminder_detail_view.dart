@@ -22,7 +22,9 @@ class ReminderDetailView extends ConsumerWidget {
       future: reminderDao.getById(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         if (snapshot.hasError || snapshot.data == null) {
           return Scaffold(
@@ -32,7 +34,10 @@ class ReminderDetailView extends ConsumerWidget {
         }
 
         final reminder = snapshot.data!;
-        final scheduled = DateTime.fromMillisecondsSinceEpoch(reminder.scheduledAt, isUtc: true).toLocal();
+        final scheduled = DateTime.fromMillisecondsSinceEpoch(
+          reminder.scheduledAt,
+          isUtc: true,
+        ).toLocal();
 
         return Scaffold(
           appBar: AppBar(
@@ -51,10 +56,18 @@ class ReminderDetailView extends ConsumerWidget {
                     context: context,
                     builder: (c) => AlertDialog(
                       title: const Text('Delete reminder?'),
-                      content: const Text('This action will remove the reminder. Are you sure?'),
+                      content: const Text(
+                        'This action will remove the reminder. Are you sure?',
+                      ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.of(c).pop(false), child: const Text('Cancel')),
-                        FilledButton(onPressed: () => Navigator.of(c).pop(true), child: const Text('Delete')),
+                        TextButton(
+                          onPressed: () => Navigator.of(c).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(c).pop(true),
+                          child: const Text('Delete'),
+                        ),
                       ],
                     ),
                   );
@@ -64,7 +77,9 @@ class ReminderDetailView extends ConsumerWidget {
                     // Pop back after deletion
                     if (context.canPop()) context.pop();
                     // Optionally show a snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reminder deleted')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reminder deleted')),
+                    );
                   }
                 },
               ),
@@ -75,14 +90,19 @@ class ReminderDetailView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(reminder.title, style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  reminder.title,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     const Icon(Icons.access_time, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(DateFormat.yMMMMd().add_jm().format(scheduled)),
+                      child: Text(
+                        DateFormat.yMMMMd().add_jm().format(scheduled),
+                      ),
                     ),
                   ],
                 ),
@@ -110,29 +130,46 @@ class ReminderDetailView extends ConsumerWidget {
                           color = Theme.of(context).colorScheme.primary;
                         }
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
-                          child: Text(cat.name, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            cat.name,
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         );
                       }
                       return const SizedBox.shrink();
                     },
                   ),
                 const SizedBox(height: 16),
-                if (reminder.description != null && reminder.description!.isNotEmpty) ...[
+                if (reminder.description != null &&
+                    reminder.description!.isNotEmpty) ...[
                   Text(
-                    'Deskripsi',
+                    'Description',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(reminder.description ?? '', style: Theme.of(context).textTheme.bodyLarge),
+                  Text(
+                    reminder.description ?? '',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                   const SizedBox(height: 16),
                 ],
 
                 // Photo section
-                if (reminder.picturePath != null && reminder.picturePath!.isNotEmpty) ...[
+                if (reminder.picturePath != null &&
+                    reminder.picturePath!.isNotEmpty) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: AspectRatio(
@@ -143,7 +180,11 @@ class ReminderDetailView extends ConsumerWidget {
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey.shade200,
-                            child: Icon(Icons.broken_image, size: 48, color: Colors.grey.shade400),
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
                           );
                         },
                       ),
@@ -153,12 +194,13 @@ class ReminderDetailView extends ConsumerWidget {
                 ],
 
                 // Additional info section
-                if (reminder.hasRecurrence || reminder.timezone != 'Asia/Makassar')
+                if (reminder.hasRecurrence ||
+                    reminder.timezone != 'Asia/Makassar')
                   _buildInfoSection(context, reminder),
 
                 const Spacer(),
-                // Bottom actions
 
+                // Bottom actions
               ],
             ),
           ),
@@ -181,8 +223,14 @@ class ReminderDetailView extends ConsumerWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-      child: Text(status[0].toUpperCase() + status.substring(1), style: TextStyle(color: c, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status[0].toUpperCase() + status.substring(1),
+        style: TextStyle(color: c, fontWeight: FontWeight.w700),
+      ),
     );
   }
 
@@ -195,12 +243,12 @@ class ReminderDetailView extends ConsumerWidget {
       case 'high':
         c = Colors.red;
         icon = Icons.arrow_upward;
-        label = 'Tinggi';
+        label = 'High';
         break;
       case 'low':
         c = Colors.grey;
         icon = Icons.arrow_downward;
-        label = 'Rendah';
+        label = 'Low';
         break;
       default: // normal
         c = Colors.blue;
@@ -210,13 +258,23 @@ class ReminderDetailView extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: c),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(color: c, fontWeight: FontWeight.w700, fontSize: 12)),
+          Text(
+            label,
+            style: TextStyle(
+              color: c,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
@@ -238,11 +296,8 @@ class ReminderDetailView extends ConsumerWidget {
                 Icon(Icons.repeat, size: 16, color: Colors.grey.shade700),
                 const SizedBox(width: 8),
                 Text(
-                  'Pengulangan: ${_getRecurrenceText(reminder.recurrenceRule!)}',
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 14,
-                  ),
+                  'Recurrence: ${_getRecurrenceText(reminder.recurrenceRule!)}',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                 ),
               ],
             ),
@@ -255,10 +310,7 @@ class ReminderDetailView extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Timezone: ${reminder.timezone}',
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                 ),
               ],
             ),
@@ -269,9 +321,9 @@ class ReminderDetailView extends ConsumerWidget {
   }
 
   String _getRecurrenceText(String rule) {
-    if (rule.contains('FREQ=DAILY')) return 'Harian';
-    if (rule.contains('FREQ=WEEKLY')) return 'Mingguan';
-    if (rule.contains('FREQ=MONTHLY')) return 'Bulanan';
-    return 'Kustom';
+    if (rule.contains('FREQ=DAILY')) return 'Daily';
+    if (rule.contains('FREQ=WEEKLY')) return 'Weekly';
+    if (rule.contains('FREQ=MONTHLY')) return 'Monthly';
+    return 'Custom';
   }
 }

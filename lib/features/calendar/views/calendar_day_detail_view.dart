@@ -283,11 +283,11 @@ class CalendarDayDetailView extends ConsumerWidget {
     switch (status) {
       case 'done':
         chipColor = Colors.green;
-        label = 'Selesai';
+        label = 'Done';
         break;
       case 'snoozed':
         chipColor = Colors.amber;
-        label = 'Snooze';
+        label = 'Snoozed';
         break;
       default: // pending
         chipColor = theme.colorScheme.primary;
