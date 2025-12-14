@@ -125,67 +125,69 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
         }
       },
       child: Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+          title: Text(_isEditMode ? 'Edit Reminder' : 'New Reminder'),
+          elevation: 0,
         ),
-        title: Text(_isEditMode ? 'Edit Reminder' : 'New Reminder'),
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildTitleField(),
-                    const SizedBox(height: 16),
-                    _buildDescriptionField(),
-                    const SizedBox(height: 24),
-                    _buildCategorySelector(),
-                    const SizedBox(height: 24),
-                    _buildPhotoSection(),
-                    const SizedBox(height: 24),
-                    _buildDateTimePicker(),
-                    const SizedBox(height: 24),
-                    _buildPrioritySelector(),
-                    const SizedBox(height: 24),
-                    if (_isEditMode) ...[
-                      _buildStatusSelector(),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTitleField(),
+                      const SizedBox(height: 16),
+                      _buildDescriptionField(),
                       const SizedBox(height: 24),
+                      _buildCategorySelector(),
+                      const SizedBox(height: 24),
+                      _buildPhotoSection(),
+                      const SizedBox(height: 24),
+                      _buildDateTimePicker(),
+                      const SizedBox(height: 24),
+                      _buildPrioritySelector(),
+                      const SizedBox(height: 24),
+                      if (_isEditMode) ...[
+                        _buildStatusSelector(),
+                        const SizedBox(height: 24),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                12 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: _isEditMode
+                  ? _buildEditModeButtons()
+                  : _buildCreateButton(),
             ),
-            padding: EdgeInsets.fromLTRB(
-              16,
-              12,
-              16,
-              12 + MediaQuery.of(context).padding.bottom,
-            ),
-            child: _isEditMode ? _buildEditModeButtons() : _buildCreateButton(),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -905,7 +907,11 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
     if (currentScale > 1.5) {
       _transformationController.value = Matrix4.identity();
     } else {
-      _transformationController.value = Matrix4.identity()..scale(targetScale);
+      _transformationController.value = Matrix4.diagonal3Values(
+        targetScale,
+        targetScale,
+        1.0,
+      );
     }
   }
 }

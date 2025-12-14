@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 import '../app_database.dart';
+import '../../../utils/datetime_utils.dart';
 
 class ReminderDao {
   final AppDatabase db;
   ReminderDao(this.db);
 
-  // Insert / Update / Delete (soft)
   Future<int> insert(RemindersCompanion data) =>
       db.into(db.reminders).insert(data);
 
@@ -15,18 +15,14 @@ class ReminderDao {
   Future<int> softDelete(int id) =>
       (db.update(db.reminders)..where((t) => t.id.equals(id))).write(
         RemindersCompanion(
-          deletedAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
+          deletedAt: Value(DateTimeUtils.nowUtc()),
+          updatedAt: Value(DateTimeUtils.nowUtc()),
         ),
       );
 
-  // Mark done & snooze
   Future<int> markDone(int id) =>
       (db.update(db.reminders)..where((t) => t.id.equals(id))).write(
-        const RemindersCompanion(
-          status: Value('done'),
-          // updatedAt: Value(DateTime.now()),
-        ),
+        const RemindersCompanion(status: Value('done')),
       );
 
   Future<int> snoozeTo(int id, int utcMillis) =>
@@ -35,123 +31,101 @@ class ReminderDao {
           status: const Value('snoozed'),
           snoozedUntil: Value(utcMillis),
           scheduledAt: Value(utcMillis),
-          updatedAt: Value(DateTime.now()),
+          updatedAt: Value(DateTimeUtils.nowUtc()),
         ),
       );
 
-  // === Queries untuk Home ===
-
-  /// Stream upcoming reminders (status pending/snoozed)
   Stream<List<Reminder>> watchUpcomingHours({int hours = 72}) {
-    final now = DateTime.now().toUtc().millisecondsSinceEpoch;
-    final until =
-        DateTime.now().toUtc().add(Duration(hours: hours)).millisecondsSinceEpoch;
+    final now = DateTimeUtils.nowUtc().millisecondsSinceEpoch;
+    final until = DateTimeUtils.hoursFromNowUtcMillis(hours);
 
     final q = db.select(db.reminders)
-      ..where((t) =>
-          t.deletedAt.isNull() &
-          t.scheduledAt.isBiggerOrEqualValue(now) &
-          t.scheduledAt.isSmallerOrEqualValue(until) &
-          t.status.isIn(['pending', 'snoozed']))
+      ..where(
+        (t) =>
+            t.deletedAt.isNull() &
+            t.scheduledAt.isBiggerOrEqualValue(now) &
+            t.scheduledAt.isSmallerOrEqualValue(until) &
+            t.status.isIn(['pending', 'snoozed']),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
 
     return q.watch();
   }
 
-  /// Stream semua reminder untuk hari tertentu.
-  Stream<List<Reminder>> watchByDayUtc(DateTime dayUtc) {
-    final start =
-        DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day).millisecondsSinceEpoch;
-    final end = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day, 23, 59, 59)
-        .millisecondsSinceEpoch;
+  Stream<List<Reminder>> watchByDayUtc(DateTime localDate) {
+    final startUtc = DateTimeUtils.startOfDayUtc(localDate);
+    final endUtc = DateTimeUtils.endOfDayUtc(localDate);
+
+    final start = startUtc.millisecondsSinceEpoch;
+    final end = endUtc.millisecondsSinceEpoch;
 
     final q = db.select(db.reminders)
-      ..where((t) =>
-          t.deletedAt.isNull() & t.scheduledAt.isBetweenValues(start, end))
+      ..where(
+        (t) => t.deletedAt.isNull() & t.scheduledAt.isBetweenValues(start, end),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
 
     return q.watch();
   }
 
-  // Query single
-  Future<Reminder?> getById(int id) =>
-      (db.select(db.reminders)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<Reminder?> getById(int id) => (db.select(
+    db.reminders,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  // === Calendar-specific queries ===
+  Future<List<Reminder>> getRemindersForMonth(DateTime localMonth) async {
+    final startUtc = DateTimeUtils.startOfMonthUtc(localMonth);
+    final endUtc = DateTimeUtils.endOfMonthUtc(localMonth);
 
-  /// Get all reminders for a specific month (UTC).
-  ///
-  /// Used by calendar to calculate density and category highlights.
-  Future<List<Reminder>> getRemindersForMonth(DateTime monthUtc) async {
-    final start = DateTime.utc(monthUtc.year, monthUtc.month, 1)
-        .millisecondsSinceEpoch;
-    final end = DateTime.utc(monthUtc.year, monthUtc.month + 1, 1)
-        .subtract(const Duration(seconds: 1))
-        .millisecondsSinceEpoch;
-
-    print('🔍 [DAO] Query reminders for month: ${monthUtc.year}-${monthUtc.month}');
-    print('🔍 [DAO] Start timestamp: $start (${DateTime.fromMillisecondsSinceEpoch(start, isUtc: true)})');
-    print('🔍 [DAO] End timestamp: $end (${DateTime.fromMillisecondsSinceEpoch(end, isUtc: true)})');
+    final start = startUtc.millisecondsSinceEpoch;
+    final end = endUtc.millisecondsSinceEpoch;
 
     final q = db.select(db.reminders)
-      ..where((t) =>
-          t.deletedAt.isNull() &
-          t.scheduledAt.isBetweenValues(start, end))
+      ..where(
+        (t) => t.deletedAt.isNull() & t.scheduledAt.isBetweenValues(start, end),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
 
     final results = await q.get();
-    print('📊 [DAO] Found ${results.length} reminders');
 
     return results;
   }
 
-  /// Get all reminders for a specific day (UTC).
-  ///
-  /// Used by day detail view.
-  Future<List<Reminder>> getRemindersForDay(DateTime dayUtc) async {
-    final start = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day)
-        .millisecondsSinceEpoch;
-    final end = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day, 23, 59, 59)
-        .millisecondsSinceEpoch;
+  Future<List<Reminder>> getRemindersForDay(DateTime localDay) async {
+    final startUtc = DateTimeUtils.startOfDayUtc(localDay);
+    final endUtc = DateTimeUtils.endOfDayUtc(localDay);
+
+    final start = startUtc.millisecondsSinceEpoch;
+    final end = endUtc.millisecondsSinceEpoch;
 
     final q = db.select(db.reminders)
-      ..where((t) =>
-          t.deletedAt.isNull() &
-          t.scheduledAt.isBetweenValues(start, end))
+      ..where(
+        (t) => t.deletedAt.isNull() & t.scheduledAt.isBetweenValues(start, end),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
 
     return q.get();
   }
 
-  /// Stream reminders for a specific day (for reactive day detail view).
-  Stream<List<Reminder>> watchRemindersForDay(DateTime dayUtc) {
-    final start = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day)
-        .millisecondsSinceEpoch;
-    final end = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day, 23, 59, 59)
-        .millisecondsSinceEpoch;
+  Stream<List<Reminder>> watchRemindersForDay(DateTime localDay) {
+    final startUtc = DateTimeUtils.startOfDayUtc(localDay);
+    final endUtc = DateTimeUtils.endOfDayUtc(localDay);
+
+    final start = startUtc.millisecondsSinceEpoch;
+    final end = endUtc.millisecondsSinceEpoch;
 
     final q = db.select(db.reminders)
-      ..where((t) =>
-          t.deletedAt.isNull() &
-          t.scheduledAt.isBetweenValues(start, end))
+      ..where(
+        (t) => t.deletedAt.isNull() & t.scheduledAt.isBetweenValues(start, end),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.scheduledAt)]);
 
     return q.watch();
   }
 
-  // === Analytics queries for monthly report ===
+  Future<Map<String, int>> getMonthStatusBreakdown(DateTime localMonth) async {
+    final reminders = await getRemindersForMonth(localMonth);
 
-  /// Get status breakdown for a specific month.
-  ///
-  /// Returns map: {'done': count, 'pending': count, 'snoozed': count}
-  Future<Map<String, int>> getMonthStatusBreakdown(DateTime monthUtc) async {
-    final reminders = await getRemindersForMonth(monthUtc);
-
-    final breakdown = <String, int>{
-      'done': 0,
-      'pending': 0,
-      'snoozed': 0,
-    };
+    final breakdown = <String, int>{'done': 0, 'pending': 0, 'snoozed': 0};
 
     for (final reminder in reminders) {
       final status = reminder.status;
@@ -163,11 +137,10 @@ class ReminderDao {
     return breakdown;
   }
 
-  /// Get category distribution for a specific month.
-  ///
-  /// Returns list of tuples: [(categoryId, count), ...]
-  Future<Map<int?, int>> getMonthCategoryDistribution(DateTime monthUtc) async {
-    final reminders = await getRemindersForMonth(monthUtc);
+  Future<Map<int?, int>> getMonthCategoryDistribution(
+    DateTime localMonth,
+  ) async {
+    final reminders = await getRemindersForMonth(localMonth);
 
     final distribution = <int?, int>{};
 
@@ -179,46 +152,26 @@ class ReminderDao {
     return distribution;
   }
 
-  /// Get weekday activity for a specific month.
-  ///
-  /// Returns map: {1: count (Monday), 2: count (Tuesday), ..., 7: count (Sunday)}
-  ///
-  /// CRITICAL: Converts scheduledAt from UTC to user timezone before grouping!
-  Future<Map<int, int>> getMonthWeekdayActivity(
-    DateTime monthUtc,
-    String timezone,
-  ) async {
-    final reminders = await getRemindersForMonth(monthUtc);
+  Future<Map<int, int>> getMonthWeekdayActivity(DateTime localMonth) async {
+    final reminders = await getRemindersForMonth(localMonth);
 
-    final activity = <int, int>{
-      1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
-    };
+    final activity = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
 
     for (final reminder in reminders) {
-      // Convert UTC to local timezone
-      final scheduledUtc = DateTime.fromMillisecondsSinceEpoch(
-        reminder.scheduledAt,
-        isUtc: true,
-      );
-      final scheduledLocal = scheduledUtc.toLocal();
-
-      final weekday = scheduledLocal.weekday; // 1 = Monday, 7 = Sunday
+      final scheduledLocal = DateTimeUtils.fromUtcMillis(reminder.scheduledAt);
+      final weekday = scheduledLocal.weekday;
       activity[weekday] = activity[weekday]! + 1;
     }
 
     return activity;
   }
 
-  /// Get recurring vs one-time breakdown.
-  ///
-  /// Returns map: {'recurring': count, 'oneTime': count}
-  Future<Map<String, int>> getMonthRecurringBreakdown(DateTime monthUtc) async {
-    final reminders = await getRemindersForMonth(monthUtc);
+  Future<Map<String, int>> getMonthRecurringBreakdown(
+    DateTime localMonth,
+  ) async {
+    final reminders = await getRemindersForMonth(localMonth);
 
-    final breakdown = {
-      'recurring': 0,
-      'oneTime': 0,
-    };
+    final breakdown = {'recurring': 0, 'oneTime': 0};
 
     for (final reminder in reminders) {
       if (reminder.hasRecurrence) {

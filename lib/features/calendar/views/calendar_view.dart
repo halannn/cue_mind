@@ -7,16 +7,6 @@ import '../models/calendar_day.dart';
 import '../widgets/today_reminders_section.dart';
 import '../../../core/routes/route_config.dart';
 
-/// Calendar feature main view - Monthly grid with heatmap indicators.
-///
-/// Spec implementation:
-/// - Monthly calendar grid (7x5 or 7x6)
-/// - Heatmap density indicators (count-based)
-/// - Category background highlights
-/// - Swipe gestures for month navigation
-/// - Today indicator
-/// - Tap to open day detail
-/// - Long-press for quick add
 class CalendarView extends ConsumerWidget {
   const CalendarView({super.key});
 
@@ -30,13 +20,12 @@ class CalendarView extends ConsumerWidget {
         title: const Text('Calendar'),
         elevation: 0,
         actions: [
-          // Monthly report button
           IconButton(
             icon: const Icon(Icons.analytics_outlined),
             tooltip: 'Monthly Report',
             onPressed: () => context.push('/calendar/report'),
           ),
-          // Jump to today button
+
           IconButton(
             icon: const Icon(Icons.today),
             tooltip: 'Go to today',
@@ -70,11 +59,6 @@ class CalendarView extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(AppRoutes.reminderNew),
-        tooltip: 'Add reminder',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -87,40 +71,30 @@ class CalendarView extends ConsumerWidget {
   ) {
     return Column(
       children: [
-        // Month header with navigation
         _buildMonthHeader(context, vm, selectedMonth),
 
         const Divider(height: 1),
 
-        // Day of week labels
         _buildDayOfWeekLabels(context),
 
-        // Calendar grid - NO Expanded, just takes needed space
         GestureDetector(
-          // Swipe gestures for month navigation
           onHorizontalDragEnd: (details) {
             if (details.primaryVelocity! < 0) {
-              // Swipe left -> next month
               vm.nextMonth();
             } else if (details.primaryVelocity! > 0) {
-              // Swipe right -> previous month
               vm.previousMonth();
             }
           },
-          child: _buildCalendarGrid(context, ref, monthData), // ✅ No Expanded wrapper
+          child: _buildCalendarGrid(context, ref, monthData),
         ),
 
         const Divider(height: 1),
 
-        // Today's reminders section - this will take remaining space
-        const Expanded(
-          child: TodayRemindersSection(),
-        ),
+        const Expanded(child: TodayRemindersSection()),
       ],
     );
   }
 
-  /// Month header: [ < ] May 2025 [ > ]
   Widget _buildMonthHeader(
     BuildContext context,
     CalendarVM vm,
@@ -131,22 +105,19 @@ class CalendarView extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Previous month button
           IconButton(
             icon: const Icon(Icons.chevron_left),
             onPressed: vm.previousMonth,
             tooltip: 'Previous month',
           ),
 
-          // Month-year label
           Text(
             DateFormat.yMMMM().format(month),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
 
-          // Next month button
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: vm.nextMonth,
@@ -157,7 +128,6 @@ class CalendarView extends ConsumerWidget {
     );
   }
 
-  /// Day of week labels: Mon Tue Wed Thu Fri Sat Sun
   Widget _buildDayOfWeekLabels(BuildContext context) {
     const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -172,7 +142,9 @@ class CalendarView extends ConsumerWidget {
                 day,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isWeekend
-                      ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
                       : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
@@ -184,36 +156,31 @@ class CalendarView extends ConsumerWidget {
     );
   }
 
-  /// Calendar grid - builds 7-column grid with proper padding
   Widget _buildCalendarGrid(
     BuildContext context,
     WidgetRef ref,
     MonthData monthData,
   ) {
-    // Calculate grid layout
     final firstDay = monthData.month;
-    final firstWeekday = firstDay.weekday; // 1 = Monday, 7 = Sunday
+    final firstWeekday = firstDay.weekday;
     final daysInMonth = monthData.days.length;
 
-    // Calculate total cells needed (include leading empty cells)
     final leadingEmptyCells = firstWeekday - 1;
     final totalCells = leadingEmptyCells + daysInMonth;
     final rows = (totalCells / 7).ceil();
 
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      shrinkWrap: true, // ✅ Makes GridView take only needed height
-      physics: const NeverScrollableScrollPhysics(), // ✅ Disable GridView scrolling
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        childAspectRatio: 0.85, // Slightly taller than wide
+        childAspectRatio: 0.85,
       ),
       itemCount: rows * 7,
       itemBuilder: (context, index) {
-        // Calculate day number
         final dayIndex = index - leadingEmptyCells;
 
-        // Empty cell before month starts
         if (dayIndex < 0 || dayIndex >= daysInMonth) {
           return const SizedBox.shrink();
         }
@@ -224,31 +191,21 @@ class CalendarView extends ConsumerWidget {
     );
   }
 
-  /// Individual day cell with heatmap indicator and category background
-  Widget _buildDayCell(
-    BuildContext context,
-    WidgetRef ref,
-    CalendarDay day,
-  ) {
+  Widget _buildDayCell(BuildContext context, WidgetRef ref, CalendarDay day) {
     final theme = Theme.of(context);
 
-    // Parse category color if present
     Color? categoryColor;
     if (day.showCategoryBackground && day.dominantCategoryColor != null) {
       try {
         final hex = day.dominantCategoryColor!.replaceFirst('#', '');
         categoryColor = Color(int.parse('0xFF$hex'));
-      } catch (_) {
-        // Invalid color, ignore
-      }
+      } catch (_) {}
     }
 
-    // Background color: category tint or transparent
     final backgroundColor = categoryColor != null
         ? categoryColor.withValues(alpha: 0.12)
         : Colors.transparent;
 
-    // Today indicator
     final isToday = day.isToday;
 
     return InkWell(
@@ -261,16 +218,13 @@ class CalendarView extends ConsumerWidget {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
           border: isToday
-              ? Border.all(
-                  color: theme.colorScheme.primary,
-                  width: 2,
-                )
+              ? Border.all(color: theme.colorScheme.primary, width: 2)
               : null,
         ),
         child: Stack(
           children: [
-            // Top strip bar for multiple categories
-            if (day.hasMultipleCategories && (day.categoryColors ?? const []).isNotEmpty)
+            if (day.hasMultipleCategories &&
+                (day.categoryColors ?? const []).isNotEmpty)
               Positioned(
                 top: 0,
                 left: 0,
@@ -286,14 +240,12 @@ class CalendarView extends ConsumerWidget {
                       } catch (_) {
                         segColor = theme.colorScheme.surfaceTint;
                       }
-                      return Expanded(
-                        child: Container(color: segColor),
-                      );
+                      return Expanded(child: Container(color: segColor));
                     }).toList(),
                   ),
                 ),
               ),
-            // Date number
+
             Center(
               child: Text(
                 '${day.date.day}',
@@ -306,7 +258,6 @@ class CalendarView extends ConsumerWidget {
               ),
             ),
 
-            // Heatmap density indicator (bottom)
             if (day.reminderCount > 0)
               Positioned(
                 bottom: 4,
@@ -320,7 +271,6 @@ class CalendarView extends ConsumerWidget {
     );
   }
 
-  /// Heatmap density indicator - visual strength based on count
   Widget _buildDensityIndicator(ThemeData theme, DensityLevel level) {
     double opacity;
     switch (level) {
@@ -349,13 +299,10 @@ class CalendarView extends ConsumerWidget {
     );
   }
 
-  /// Handle day tap - navigate to day detail view
   void _onDayTap(BuildContext context, WidgetRef ref, CalendarDay day) {
-    // Navigate to day detail screen
     context.push('/calendar/day/${day.date.toIso8601String()}');
   }
 
-  /// Handle day long-press - show quick add menu
   void _onDayLongPress(BuildContext context, WidgetRef ref, CalendarDay day) {
     showModalBottomSheet(
       context: context,
@@ -374,8 +321,10 @@ class CalendarView extends ConsumerWidget {
             FilledButton.icon(
               onPressed: () {
                 Navigator.pop(context);
-                // Navigate to reminder editor with date pre-filled
-                context.push('${AppRoutes.reminderNew}?date=${day.date.toIso8601String()}');
+
+                context.push(
+                  '${AppRoutes.reminderNew}?date=${day.date.toIso8601String()}',
+                );
               },
               icon: const Icon(Icons.add),
               label: const Text('Add reminder on this day'),

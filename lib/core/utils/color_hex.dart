@@ -13,10 +13,18 @@ extension HexColorParsing on String {
 
 extension ColorHexString on Color {
   String toHex({bool leadingHashSign = true, bool includeAlpha = false}) {
-    final a = includeAlpha ? alpha.toRadixString(16).padLeft(2, '0') : '';
-    final r = red.toRadixString(16).padLeft(2, '0');
-    final g = green.toRadixString(16).padLeft(2, '0');
-    final b = blue.toRadixString(16).padLeft(2, '0');
+    final a = includeAlpha
+        ? ((this.a * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0')
+        : '';
+    final r = ((this.r * 255.0).round() & 0xff)
+        .toRadixString(16)
+        .padLeft(2, '0');
+    final g = ((this.g * 255.0).round() & 0xff)
+        .toRadixString(16)
+        .padLeft(2, '0');
+    final b = ((this.b * 255.0).round() & 0xff)
+        .toRadixString(16)
+        .padLeft(2, '0');
     final hex = '${includeAlpha ? a : ''}$r$g$b'.toUpperCase();
     return leadingHashSign ? '#$hex' : hex;
   }

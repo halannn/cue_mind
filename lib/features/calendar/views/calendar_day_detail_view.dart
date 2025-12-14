@@ -15,7 +15,7 @@ class CalendarDayDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final normalized = DateTime.utc(date.year, date.month, date.day);
+    final normalized = DateTime(date.year, date.month, date.day);
     final remindersAsync = ref.watch(dayRemindersProvider(normalized));
 
     return Scaffold(

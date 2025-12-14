@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/services/db/app_database.dart';
+import '../../core/utils/datetime_utils.dart';
 
 class ReminderCard extends ConsumerWidget {
   final Reminder reminder;
@@ -31,10 +32,8 @@ class ReminderCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final scheduledTime = DateTime.fromMillisecondsSinceEpoch(
-      reminder.scheduledAt,
-      isUtc: true,
-    ).toLocal();
+
+    final scheduledTime = DateTimeUtils.fromUtcMillis(reminder.scheduledAt);
 
     if (categoryColor != null) {
       return _buildCard(context, theme, scheduledTime, categoryColor, ref);

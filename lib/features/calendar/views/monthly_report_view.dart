@@ -8,18 +8,6 @@ import '../viewmodels/calendar_viewmodel.dart';
 import '../models/monthly_report.dart';
 import '../../../core/utils/color_hex.dart';
 
-/// Monthly Report View - Reflective analytics without judgment.
-///
-/// Spec implementation:
-/// - Non-judgmental metrics (no "failure" language)
-/// - Emotionally safe color palette
-/// - Swipe navigation between months
-/// - 5 core analytics blocks:
-///   1. Total reminders (big number)
-///   2. Status breakdown (donut chart)
-///   3. Category distribution (horizontal bars)
-///   4. Busiest weekdays (vertical bars)
-///   5. Recurring vs one-time (split bar)
 class MonthlyReportView extends ConsumerWidget {
   const MonthlyReportView({super.key});
 
@@ -39,15 +27,12 @@ class MonthlyReportView extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Month navigation header - always visible
           _buildMonthNavigationHeader(context, vm, vmState.selectedMonth),
 
           const Divider(height: 1),
 
-          // Report content
           Expanded(
             child: GestureDetector(
-              // Swipe gestures for month navigation
               onHorizontalDragEnd: (details) {
                 if (details.primaryVelocity! < 0) {
                   vm.nextMonth();
@@ -57,15 +42,18 @@ class MonthlyReportView extends ConsumerWidget {
               },
               child: vmState.reportData.when(
                 data: (report) {
-                  // Debug: Print untuk melihat bulan mana yang dibandingkan
-                  print('🔍 [View] Report month: ${report.month.year}-${report.month.month}');
-                  print('🔍 [View] Selected month: ${vmState.selectedMonth.year}-${vmState.selectedMonth.month}');
+                  debugPrint(
+                    '🔍 [View] Report month: ${report.month.year}-${report.month.month}',
+                  );
+                  debugPrint(
+                    '🔍 [View] Selected month: ${vmState.selectedMonth.year}-${vmState.selectedMonth.month}',
+                  );
 
-                  // Validate that the report month matches selected month
                   if (report.month.year != vmState.selectedMonth.year ||
                       report.month.month != vmState.selectedMonth.month) {
-                    // Data is stale, show loading instead
-                    print('⚠️ [View] Data mismatch detected, showing loading');
+                    debugPrint(
+                      '⚠️ [View] Data mismatch detected, showing loading',
+                    );
                     return const Center(child: CircularProgressIndicator());
                   }
                   return _buildReportContent(context, report);
@@ -84,15 +72,9 @@ class MonthlyReportView extends ConsumerWidget {
     return 'Monthly Summary';
   }
 
-  Widget _buildReportContent(
-    BuildContext context,
-    MonthlyReport report,
-  ) {
-    // Check for empty/future states
-    // Treat only strictly future months (after the start of current month) as future.
-    // Current month should NOT be considered future.
-    final now = DateTime.now().toUtc();
-    final currentMonthStart = DateTime.utc(now.year, now.month, 1);
+  Widget _buildReportContent(BuildContext context, MonthlyReport report) {
+    final now = DateTime.now();
+    final currentMonthStart = DateTime(now.year, now.month, 1);
     if (report.month.isAfter(currentMonthStart)) {
       return _buildFutureMonthState(context, report.month);
     }
@@ -101,34 +83,27 @@ class MonthlyReportView extends ConsumerWidget {
       return _buildEmptyState(context);
     }
 
-    // Show full report
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-
-          // 1. Total reminders (big number)
           _buildTotalRemindersCard(context, report),
 
           const SizedBox(height: 16),
 
-          // 2. Status breakdown (donut chart)
           _buildStatusBreakdownCard(context, report.statusBreakdown),
 
           const SizedBox(height: 16),
 
-          // 3. Category distribution (horizontal bars)
           _buildCategoryDistributionCard(context, report.categoryDistribution),
 
           const SizedBox(height: 16),
 
-          // 4. Busiest weekdays (vertical bars)
           _buildWeekdayActivityCard(context, report.weekdayActivity),
 
           const SizedBox(height: 16),
 
-          // 5. Recurring vs one-time (split bar)
           _buildRecurringBreakdownCard(context, report.recurringBreakdown),
 
           const SizedBox(height: 32),
@@ -136,10 +111,6 @@ class MonthlyReportView extends ConsumerWidget {
       ),
     );
   }
-
-  // ===========================================================================
-  // EMPTY STATES
-  // ===========================================================================
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
@@ -151,25 +122,24 @@ class MonthlyReportView extends ConsumerWidget {
             Icon(
               Icons.insert_chart_outlined,
               size: 64,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurfaceVariant
-                  .withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
               'No reminders this month.',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Enjoy your free time 🌿',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -194,25 +164,24 @@ class MonthlyReportView extends ConsumerWidget {
             Icon(
               Icons.calendar_today_outlined,
               size: 64,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurfaceVariant
-                  .withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
               'Nothing planned for ${DateFormat.MMMM().format(month)} yet.',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Your future is wide open ✨',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -246,10 +215,6 @@ class MonthlyReportView extends ConsumerWidget {
     );
   }
 
-  // ===========================================================================
-  // MONTH NAVIGATION HEADER
-  // ===========================================================================
-
   Widget _buildMonthNavigationHeader(
     BuildContext context,
     MonthlyReportVM vm,
@@ -268,9 +233,9 @@ class MonthlyReportView extends ConsumerWidget {
           ),
           Text(
             DateFormat.yMMMM().format(month),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
@@ -283,10 +248,6 @@ class MonthlyReportView extends ConsumerWidget {
     );
   }
 
-  // ===========================================================================
-  // 1. TOTAL REMINDERS CARD
-  // ===========================================================================
-
   Widget _buildTotalRemindersCard(BuildContext context, MonthlyReport report) {
     return Card(
       child: Padding(
@@ -296,16 +257,16 @@ class MonthlyReportView extends ConsumerWidget {
             Text(
               '${report.totalReminders}',
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Reminders scheduled this month',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -313,10 +274,6 @@ class MonthlyReportView extends ConsumerWidget {
       ),
     );
   }
-
-  // ===========================================================================
-  // 2. STATUS BREAKDOWN CARD (Donut Chart)
-  // ===========================================================================
 
   Widget _buildStatusBreakdownCard(
     BuildContext context,
@@ -330,38 +287,32 @@ class MonthlyReportView extends ConsumerWidget {
           children: [
             Text(
               'Status Overview',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 24),
 
-            // Donut chart
             Center(
               child: SizedBox(
                 width: 180,
                 height: 180,
-                child: CustomPaint(
-                  painter: DonutChartPainter(breakdown),
-                ),
+                child: CustomPaint(painter: DonutChartPainter(breakdown)),
               ),
             ),
 
             const SizedBox(height: 24),
 
-            // Legend
             _buildStatusLegend(context, breakdown),
 
             const SizedBox(height: 16),
 
-            // Insight message
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -429,31 +380,21 @@ class MonthlyReportView extends ConsumerWidget {
         Container(
           width: 16,
           height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),
         Text(
           '$count (${percentage.toStringAsFixed(0)}%)',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
   }
-
-  // ===========================================================================
-  // 3. CATEGORY DISTRIBUTION CARD (Horizontal Bars)
-  // ===========================================================================
 
   Widget _buildCategoryDistributionCard(
     BuildContext context,
@@ -471,27 +412,25 @@ class MonthlyReportView extends ConsumerWidget {
           children: [
             Text(
               'Category Distribution',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
 
-            // Category bars
-            ...distribution.map((cat) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildCategoryBar(context, cat),
-                )),
+            ...distribution.map(
+              (cat) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildCategoryBar(context, cat),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryBar(
-    BuildContext context,
-    CategoryDistribution cat,
-  ) {
+  Widget _buildCategoryBar(BuildContext context, CategoryDistribution cat) {
     Color barColor;
     try {
       barColor = cat.colorHex.toColor();
@@ -516,8 +455,8 @@ class MonthlyReportView extends ConsumerWidget {
             Text(
               '${cat.percentage.toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -527,8 +466,9 @@ class MonthlyReportView extends ConsumerWidget {
           child: LinearProgressIndicator(
             value: cat.percentage / 100,
             minHeight: 8,
-            backgroundColor:
-                Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation(barColor),
           ),
         ),
@@ -536,16 +476,13 @@ class MonthlyReportView extends ConsumerWidget {
     );
   }
 
-  // ===========================================================================
-  // 4. WEEKDAY ACTIVITY CARD (Vertical Bars)
-  // ===========================================================================
-
   Widget _buildWeekdayActivityCard(
     BuildContext context,
     List<WeekdayActivity> activity,
   ) {
-    final maxCount =
-        activity.map((a) => a.count).reduce((a, b) => a > b ? a : b);
+    final maxCount = activity
+        .map((a) => a.count)
+        .reduce((a, b) => a > b ? a : b);
     final busiestDay = activity.reduce((a, b) => a.count > b.count ? a : b);
 
     return Card(
@@ -556,13 +493,12 @@ class MonthlyReportView extends ConsumerWidget {
           children: [
             Text(
               'Busiest Days of the Week',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 24),
 
-            // Vertical bars chart
             SizedBox(
               height: 170,
               child: Row(
@@ -580,15 +516,13 @@ class MonthlyReportView extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
-            // Insight
             if (maxCount > 0)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer
-                      .withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -627,49 +561,45 @@ class MonthlyReportView extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // Count label
             if (day.count > 0)
               Text(
                 '${day.count}',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
             const SizedBox(height: 2),
 
-            // Bar
             Container(
               width: double.infinity,
-              height: normalizedHeight * 120, // Max height 120 to avoid overflow
+              height: normalizedHeight * 120,
               decoration: BoxDecoration(
                 color: isWeekend
-                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.5)
                     : Theme.of(context).colorScheme.primary,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(4)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(4),
+                ),
               ),
             ),
 
             const SizedBox(height: 6),
 
-            // Day label
             Text(
               day.dayName,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isWeekend
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Theme.of(context).colorScheme.onSurface,
-                  ),
+                color: isWeekend
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  // ===========================================================================
-  // 5. RECURRING VS ONE-TIME CARD (Split Bar)
-  // ===========================================================================
 
   Widget _buildRecurringBreakdownCard(
     BuildContext context,
@@ -687,13 +617,12 @@ class MonthlyReportView extends ConsumerWidget {
           children: [
             Text(
               'Routine vs Spontaneity',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
 
-            // Split bar
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Row(
@@ -707,13 +636,11 @@ class MonthlyReportView extends ConsumerWidget {
                         alignment: Alignment.center,
                         child: Text(
                           '${breakdown.recurringPercentage.toStringAsFixed(0)}%',
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
                     ),
@@ -722,20 +649,19 @@ class MonthlyReportView extends ConsumerWidget {
                       flex: breakdown.oneTime,
                       child: Container(
                         height: 40,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .secondary
-                            .withValues(alpha: 0.7),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.secondary.withValues(alpha: 0.7),
                         alignment: Alignment.center,
                         child: Text(
                           '${breakdown.oneTimePercentage.toStringAsFixed(0)}%',
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
                     ),
@@ -745,7 +671,6 @@ class MonthlyReportView extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
-            // Legend
             Row(
               children: [
                 _buildRecurringLegendItem(
@@ -757,7 +682,9 @@ class MonthlyReportView extends ConsumerWidget {
                 const SizedBox(width: 24),
                 _buildRecurringLegendItem(
                   context,
-                  color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.secondary.withValues(alpha: 0.7),
                   label: 'One-time',
                   count: breakdown.oneTime,
                 ),
@@ -766,14 +693,12 @@ class MonthlyReportView extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
-            // Insight
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -817,18 +742,11 @@ class MonthlyReportView extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          '$label ($count)',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        Text('$label ($count)', style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }
 }
-
-// =============================================================================
-// DONUT CHART PAINTER
-// =============================================================================
 
 class DonutChartPainter extends CustomPainter {
   final StatusBreakdown breakdown;
@@ -843,7 +761,6 @@ class DonutChartPainter extends CustomPainter {
 
     final rect = Rect.fromCircle(center: center, radius: radius);
 
-    // Calculate angles
     final total = breakdown.total;
     if (total == 0) return;
 
@@ -851,9 +768,8 @@ class DonutChartPainter extends CustomPainter {
     final pendingAngle = (breakdown.pending / total) * 2 * math.pi;
     final snoozedAngle = (breakdown.snoozed / total) * 2 * math.pi;
 
-    var startAngle = -math.pi / 2; // Start from top
+    var startAngle = -math.pi / 2;
 
-    // Done segment (green)
     if (breakdown.done > 0) {
       final paint = Paint()
         ..color = Colors.green
@@ -864,7 +780,6 @@ class DonutChartPainter extends CustomPainter {
       startAngle += doneAngle;
     }
 
-    // Pending segment (blue)
     if (breakdown.pending > 0) {
       final paint = Paint()
         ..color = Colors.blue
@@ -875,7 +790,6 @@ class DonutChartPainter extends CustomPainter {
       startAngle += pendingAngle;
     }
 
-    // Snoozed segment (amber)
     if (breakdown.snoozed > 0) {
       final paint = Paint()
         ..color = Colors.amber

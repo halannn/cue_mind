@@ -75,6 +75,7 @@ class ReminderDetailView extends ConsumerWidget {
                   if (confirm == true) {
                     await reminderDao.softDelete(id);
 
+                    if (!context.mounted) return;
                     if (context.canPop()) context.pop();
 
                     ScaffoldMessenger.of(context).showSnackBar(

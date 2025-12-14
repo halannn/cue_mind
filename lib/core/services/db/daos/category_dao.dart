@@ -83,7 +83,7 @@ class CategoryDao {
         name: Value(name),
         colorHex: Value(colorHex),
         sortOrder: sortOrder == null ? const Value.absent() : Value(sortOrder),
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()), // Using local time is OK for updatedAt
       ),
     );
   }
@@ -91,7 +91,7 @@ class CategoryDao {
   Future<int> deleteSoft(int id) {
     return (db.update(db.categories)..where((t) => t.id.equals(id))).write(
       CategoriesCompanion(
-        deletedAt: Value(DateTime.now()),
+        deletedAt: Value(DateTime.now()), // Using local time is OK for deletedAt
         updatedAt: Value(DateTime.now()),
       ),
     );

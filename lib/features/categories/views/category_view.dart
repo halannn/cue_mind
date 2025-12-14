@@ -380,7 +380,7 @@ class CategoryView extends ConsumerWidget {
                   title: const Text('Show recurring only'),
                   value: filterState.showRecurringOnly,
                   onChanged: (_) => notifier.toggleRecurringOnly(),
-                  activeColor: categoryColor,
+                  activeThumbColor: categoryColor,
                 ),
                 const SizedBox(height: 16),
               ],
@@ -413,20 +413,23 @@ class CategoryView extends ConsumerWidget {
                 const SizedBox(height: 16),
                 ...ReminderSortBy.values.map((sortOption) {
                   final isSelected = filterState.sortBy == sortOption;
-                  return RadioListTile<ReminderSortBy>(
+                  return ListTile(
                     title: Text(sortOption.label),
-                    value: sortOption,
-                    groupValue: filterState.sortBy,
-                    onChanged: (value) {
-                      if (value != null) {
-                        notifier.setSortBy(value);
-                        Navigator.pop(context);
-                      }
-                    },
-                    activeColor: categoryColor,
+                    leading: Icon(
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: isSelected
+                          ? categoryColor
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     selected: isSelected,
+                    onTap: () {
+                      notifier.setSortBy(sortOption);
+                      Navigator.pop(context);
+                    },
                   );
-                }).toList(),
+                }),
               ],
             ),
           );

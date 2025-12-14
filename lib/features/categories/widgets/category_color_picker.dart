@@ -217,7 +217,7 @@ class CategoryColorPicker extends StatelessWidget {
                   color: color,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
