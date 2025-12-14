@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/services/db/app_database.dart';
 import '../../../core/services/providers.dart';
+import '../../../core/services/image_service.dart';
 import '../../../core/utils/color_hex.dart';
 import '../../../core/routes/route_config.dart';
 
@@ -592,9 +593,37 @@ class _ReminderEditorViewState extends ConsumerState<ReminderEditorView> {
   }
 
   Future<void> _pickPhoto() async {
+    final source = await showModalBottomSheet<ImageSourceType>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a photo'),
+                subtitle: const Text('Use camera to capture new photo'),
+                onTap: () => Navigator.pop(context, ImageSourceType.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from gallery'),
+                subtitle: const Text('Select existing photo from device'),
+                onTap: () => Navigator.pop(context, ImageSourceType.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
     final img = ref.read(imageServiceProvider);
-    final path = await img.pickAndSave();
-    if (path != null) {
+    final path = await img.pickFromSource(source);
+    if (path != null && mounted) {
       setState(() => _photoPath = path);
     }
   }
