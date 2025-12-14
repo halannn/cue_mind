@@ -7,8 +7,9 @@ class CategoryDao {
 
   Stream<List<Category>> watchAll() {
     final q = (db.select(db.categories)
-      ..where((t) => t.deletedAt.isNull())
+      ..where((t) => t.deletedAt.isNull() & t.isArchived.equals(false))
       ..orderBy([
+        (t) => OrderingTerm.desc(t.isPinned),
         (t) => OrderingTerm.asc(t.sortOrder),
         (t) => OrderingTerm.asc(t.name),
       ]));
@@ -17,9 +18,30 @@ class CategoryDao {
 
   Future<List<Category>> allOnce() {
     final q = (db.select(db.categories)
-      ..where((t) => t.deletedAt.isNull())
+      ..where((t) => t.deletedAt.isNull() & t.isArchived.equals(false))
       ..orderBy([
+        (t) => OrderingTerm.desc(t.isPinned),
         (t) => OrderingTerm.asc(t.sortOrder),
+        (t) => OrderingTerm.asc(t.name),
+      ]));
+    return q.get();
+  }
+
+  Stream<List<Category>> watchArchived() {
+    final q = (db.select(db.categories)
+      ..where((t) => t.deletedAt.isNull() & t.isArchived.equals(true))
+      ..orderBy([
+        (t) => OrderingTerm.desc(t.updatedAt),
+        (t) => OrderingTerm.asc(t.name),
+      ]));
+    return q.watch();
+  }
+
+  Future<List<Category>> archivedOnce() {
+    final q = (db.select(db.categories)
+      ..where((t) => t.deletedAt.isNull() & t.isArchived.equals(true))
+      ..orderBy([
+        (t) => OrderingTerm.desc(t.updatedAt),
         (t) => OrderingTerm.asc(t.name),
       ]));
     return q.get();
@@ -70,6 +92,26 @@ class CategoryDao {
     return (db.update(db.categories)..where((t) => t.id.equals(id))).write(
       CategoriesCompanion(
         deletedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<int> togglePin(int id, bool isPinned) {
+    return (db.update(db.categories)..where((t) => t.id.equals(id))).write(
+      CategoriesCompanion(
+        isPinned: Value(isPinned),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<int> toggleArchive(int id, bool isArchived) {
+    return (db.update(db.categories)..where((t) => t.id.equals(id))).write(
+      CategoriesCompanion(
+        isArchived: Value(isArchived),
+
+        isPinned: isArchived ? const Value(false) : const Value.absent(),
         updatedAt: Value(DateTime.now()),
       ),
     );

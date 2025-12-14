@@ -10,6 +10,8 @@ class CategoryRepository {
 
   Stream<List<Category>> watchAll() => dao.watchAll();
   Future<List<Category>> allOnce() => dao.allOnce();
+  Stream<List<Category>> watchArchived() => dao.watchArchived();
+  Future<List<Category>> archivedOnce() => dao.archivedOnce();
   Stream<List<Reminder>> watchRemindersByCategoryId(int categoryId) =>
       dao.watchRemindersByCategoryId(categoryId);
   Stream<Category?> watchById(int id) => dao.watchById(id);
@@ -43,6 +45,11 @@ class CategoryRepository {
   }
 
   Future<int> deleteSoft(int id) => dao.deleteSoft(id);
+
+  Future<int> togglePin(int id, bool isPinned) => dao.togglePin(id, isPinned);
+
+  Future<int> toggleArchive(int id, bool isArchived) =>
+      dao.toggleArchive(id, isArchived);
 
   Future<bool> nameExists(String name, {int? excludeId}) async {
     final all = await allOnce();

@@ -74,8 +74,44 @@ class CategoriesVM extends Notifier<CategoriesState> {
   }
 
   Future<void> remove(int id) => _repo.deleteSoft(id);
+
+  Future<void> togglePin(int id, bool currentPinStatus) =>
+      _repo.togglePin(id, !currentPinStatus);
+
+  Future<void> toggleArchive(int id, bool currentArchiveStatus) =>
+      _repo.toggleArchive(id, !currentArchiveStatus);
 }
 
 final categoriesVMProvider = NotifierProvider<CategoriesVM, CategoriesState>(
   CategoriesVM.new,
 );
+
+class ArchivedCategoriesVM extends Notifier<CategoriesState> {
+  StreamSubscription<List<Category>>? _sub;
+
+  CategoryRepository get _repo => ref.read(categoryRepositoryProvider);
+
+  @override
+  CategoriesState build() {
+    state = const CategoriesState(list: AsyncValue.loading());
+
+    _sub?.cancel();
+    _sub = _repo.watchArchived().listen(
+      (data) => state = state.copyWith(list: AsyncValue.data(data)),
+      onError: (e, st) => state = state.copyWith(list: AsyncValue.error(e, st)),
+    );
+
+    ref.onDispose(() => _sub?.cancel());
+
+    return state;
+  }
+
+  Future<void> unarchive(int id) => _repo.toggleArchive(id, true);
+
+  Future<void> deletePermanently(int id) => _repo.deleteSoft(id);
+}
+
+final archivedCategoriesVMProvider =
+    NotifierProvider<ArchivedCategoriesVM, CategoriesState>(
+      ArchivedCategoriesVM.new,
+    );
