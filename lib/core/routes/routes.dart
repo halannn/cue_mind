@@ -6,6 +6,7 @@ import 'route_factory.dart';
 import 'route_error_handler.dart';
 
 import '../navigation/view/main_layout.dart';
+import '../widgets/app_bootstrap_widget.dart';
 import '../../features/home/views/home_view.dart';
 import '../../features/home/views/reminder_editor_view.dart';
 import '../../features/categories/views/categories_view.dart';
@@ -57,7 +58,9 @@ final router = GoRouter(
     // =========================================================================
     ShellRoute(
       navigatorKey: shellNavigatorKey,
-      builder: (context, state, child) => MainLayout(child: child),
+      builder: (context, state, child) => AppBootstrapWidget(
+        child: MainLayout(child: child),
+      ),
       routes: [
         RoutesFactory.createBottomNavRoute(
           path: AppRoutes.home,

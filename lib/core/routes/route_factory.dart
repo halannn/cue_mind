@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Factory for creating GoRouter routes
 class RoutesFactory {
   RoutesFactory._();
 
+  /// Creates a bottom navigation route
   static GoRoute createBottomNavRoute({
     required String path,
     required String name,
@@ -18,6 +20,7 @@ class RoutesFactory {
     );
   }
 
+  /// Creates a full-screen dialog route.
   static GoRoute createDialogRoute({
     required String path,
     required String name,
@@ -28,10 +31,14 @@ class RoutesFactory {
       path: path,
       name: name,
       parentNavigatorKey: navigatorKey,
-      pageBuilder: (_, _) => MaterialPage(fullscreenDialog: true, child: child),
+      pageBuilder: (_, _) => MaterialPage(
+        fullscreenDialog: true,
+        child: child,
+      ),
     );
   }
 
+  /// Creates a full-screen dialog route with dynamic builder
   static GoRoute createDialogRouteWithBuilder({
     required String path,
     required String name,
@@ -42,11 +49,14 @@ class RoutesFactory {
       path: path,
       name: name,
       parentNavigatorKey: navigatorKey,
-      pageBuilder: (_, state) =>
-          MaterialPage(fullscreenDialog: true, child: builder(state)),
+      pageBuilder: (_, state) => MaterialPage(
+        fullscreenDialog: true,
+        child: builder(state),
+      ),
     );
   }
 
+  /// Creates a standard push route with custom page builder.
   static GoRoute createPushRoute({
     required String path,
     required String name,
@@ -57,22 +67,7 @@ class RoutesFactory {
       path: path,
       name: name,
       parentNavigatorKey: navigatorKey,
-      pageBuilder: (context, state) => CustomTransitionPage(
-        key: state.pageKey,
-        child: builder(state),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                ),
-            child: child,
-          );
-        },
-      ),
+      pageBuilder: (_, state) => MaterialPage(child: builder(state)),
     );
   }
 }

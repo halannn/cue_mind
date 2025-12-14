@@ -11,8 +11,8 @@ class CalendarRepository {
 
   CalendarRepository({required this.reminderDao, required this.categoryDao});
 
-  Future<MonthData> getMonthData(DateTime monthUtc) async {
-    final month = DateTime.utc(monthUtc.year, monthUtc.month, 1);
+  Future<MonthData> getMonthData(DateTime monthLocal) async {
+    final month = DateTime(monthLocal.year, monthLocal.month, 1);
 
     final reminders = await reminderDao.getRemindersForMonth(month);
 
@@ -24,8 +24,8 @@ class CalendarRepository {
       final scheduledDate = DateTime.fromMillisecondsSinceEpoch(
         reminder.scheduledAt,
         isUtc: true,
-      );
-      final dayKey = DateTime.utc(
+      ).toLocal();
+      final dayKey = DateTime(
         scheduledDate.year,
         scheduledDate.month,
         scheduledDate.day,
@@ -33,15 +33,15 @@ class CalendarRepository {
       remindersByDay.putIfAbsent(dayKey, () => []).add(reminder);
     }
 
-    final now = DateTime.now().toUtc();
-    final today = DateTime.utc(now.year, now.month, now.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    final daysInMonth = DateTime.utc(monthUtc.year, monthUtc.month + 1, 0).day;
+    final daysInMonth = DateTime(monthLocal.year, monthLocal.month + 1, 0).day;
     final days = <CalendarDay>[];
     final dayMap = <DateTime, CalendarDay>{};
 
     for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime.utc(monthUtc.year, monthUtc.month, day);
+      final date = DateTime(monthLocal.year, monthLocal.month, day);
       final dayReminders = remindersByDay[date] ?? [];
 
       String? dominantColor;
@@ -87,21 +87,21 @@ class CalendarRepository {
     return MonthData(month: month, days: days, dayMap: dayMap);
   }
 
-  Stream<List<Reminder>> watchDayReminders(DateTime dayUtc) {
-    final normalized = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day);
+  Stream<List<Reminder>> watchDayReminders(DateTime dayLocal) {
+    final normalized = DateTime(dayLocal.year, dayLocal.month, dayLocal.day);
     return reminderDao.watchRemindersForDay(normalized);
   }
 
-  Future<List<Reminder>> getDayReminders(DateTime dayUtc) {
-    final normalized = DateTime.utc(dayUtc.year, dayUtc.month, dayUtc.day);
+  Future<List<Reminder>> getDayReminders(DateTime dayLocal) {
+    final normalized = DateTime(dayLocal.year, dayLocal.month, dayLocal.day);
     return reminderDao.getRemindersForDay(normalized);
   }
 
   Future<MonthlyReport> getMonthlyReport(
-    DateTime monthUtc, {
+    DateTime monthLocal, {
     String timezone = 'Asia/Makassar',
   }) async {
-    final month = DateTime.utc(monthUtc.year, monthUtc.month, 1);
+    final month = DateTime(monthLocal.year, monthLocal.month, 1);
 
     debugPrint(
       '🔍 [MonthlyReport] Loading report for: ${month.toIso8601String()}',
